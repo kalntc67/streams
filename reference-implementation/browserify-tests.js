@@ -16,11 +16,31 @@ es6ify.traceurOverrides = {
   templateLiterals: 'parse'
 };
 
-const bundle = browserify()
-                .add(es6ify.runtime)
-                .transform(es6ify)
-                .add(require.resolve('./test/readable-stream.js'))
-                .bundle()
-                .pipe(fs.createWriteStream('./bundle.js'));
+const dest = fs.createWriteStream('./bundle.js');
 
-// Also need to prepend `var global = this` at the top.
+dest.write(`
+var global = this;
+
+// setTimeout should not be used by our tests (I think I have eradicated it from the whitelisted ones so far)
+// However browserify's process.nextTick shim uses it as a fallback.
+// https://github.com/substack/node-browserify/issues/1109
+function setTimeout(fn) {
+  Promise.resolve().then(fn);
+}
+
+var console = {
+  log: print
+};
+`,
+function (err) {
+  if (err) {
+    throw err;
+  }
+
+  browserify()
+    .add(es6ify.runtime)
+    .transform(es6ify)
+    .add(require.resolve('./test/readable-stream.js'))
+    .bundle()
+    .pipe(dest);
+});

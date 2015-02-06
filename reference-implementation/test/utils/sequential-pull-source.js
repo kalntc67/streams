@@ -7,7 +7,7 @@ export default class SequentialPullSource {
 
     this._exec = f => f();
     if (async) {
-      this._exec = f => setImmediate(f);
+      this._exec = f => Promise.resolve().then(f);
     }
   }
 
