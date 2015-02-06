@@ -120,26 +120,6 @@ test('ReadableStream reading a stream makes ready and closed return a promise fu
   );
 });
 
-test('ReadableStream avoids waiting-to-waiting transitions when immediately reading', t => {
-  var doEnqueue;
-  var rs = new ReadableStream({
-    start(enqueue) {
-      doEnqueue = enqueue;
-    }
-  });
-
-  t.equal(rs.state, 'waiting', 'state is waiting to start');
-  rs.ready.then(() => t.fail('ready should not fulfill'));
-
-  doEnqueue('a');
-  t.equal(rs.state, 'readable', 'state is readable after enqueue');
-  rs.read();
-
-  t.equal(rs.state, 'waiting', 'state is waiting at the end');
-
-  setTimeout(() => t.end(), 20);
-});
-
 test('ReadableStream avoid redundant pull call', t => {
   var pullCount = 0;
   var rs = new ReadableStream({
@@ -156,11 +136,12 @@ test('ReadableStream avoid redundant pull call', t => {
   rs.ready;
   rs.ready;
 
-  // Use setTimeout to ensure we run after any promises.
-  setTimeout(() => {
-    t.equal(pullCount, 1, 'pull should not be called more than once');
-    t.end();
-  }, 50);
+  Promise.resolve().then(() =>
+    Promise.resolve().then(() => {
+      t.equal(pullCount, 1, 'pull should not be called more than once');
+      t.end();
+    })
+  );
 });
 
 test('ReadableStream start throws an error', t => {
@@ -307,8 +288,8 @@ test('ReadableStream does not call pull until previous pull\'s promise fulfills'
     t.equal(timesCalled, 1, 'pull is not yet called a second time');
     t.equal(rs.read(), 1, 'read() returns enqueued value');
 
-    setTimeout(() => {
-      t.equal(timesCalled, 1, 'after 30 ms, pull has still only been called once');
+    Promise.resolve().then(() => {
+      t.equal(timesCalled, 1, 'after a promise resolution, pull has still only been called once');
 
       resolve();
 
@@ -317,7 +298,7 @@ test('ReadableStream does not call pull until previous pull\'s promise fulfills'
         t.equal(rs.read(), 2, 'read() returns the second enqueued value');
         t.end();
       });
-    }, 30);
+    });
   });
 });
 
@@ -351,11 +332,11 @@ test('ReadableStream does not call pull multiple times after previous pull finis
     t.equal(rs.read(), 'b', 'second chunk should be as expected');
     t.equal(rs.read(), 'c', 'third chunk should be as expected');
 
-    setTimeout(() => {
+    Promise.resolve().then(() => {
       // Once for after start, and once for after rs.read() === 'a'.
       t.equal(timesCalled, 2, 'pull() should only be called twice');
       t.end();
-    }, 50);
+    });
   });
 });
 
@@ -456,28 +437,28 @@ test('Default ReadableStream returns `false` for all but the first `enqueue` cal
 test('ReadableStream continues returning `true` from `enqueue` if the data is read out of it in time', t => {
   t.plan(12);
 
+  var enqueue;
   var rs = new ReadableStream({
-    start(enqueue) {
-      // Delay a bit so that the stream is successfully constructed and thus the `rs` variable references something.
-      setTimeout(() => {
-        t.equal(enqueue('foo'), true);
-        t.equal(rs.state, 'readable');
-        t.equal(rs.read(), 'foo');
-        t.equal(rs.state, 'waiting');
-
-        t.equal(enqueue('bar'), true);
-        t.equal(rs.state, 'readable');
-        t.equal(rs.read(), 'bar');
-        t.equal(rs.state, 'waiting');
-
-        t.equal(enqueue('baz'), true);
-        t.equal(rs.state, 'readable');
-        t.equal(rs.read(), 'baz');
-        t.equal(rs.state, 'waiting');
-      }, 0);
+    start(enqueue_) {
+      enqueue = enqueue_;
     },
     strategy: new CountQueuingStrategy({ highWaterMark: 4 })
   });
+
+  t.equal(enqueue('foo'), true);
+  t.equal(rs.state, 'readable');
+  t.equal(rs.read(), 'foo');
+  t.equal(rs.state, 'waiting');
+
+  t.equal(enqueue('bar'), true);
+  t.equal(rs.state, 'readable');
+  t.equal(rs.read(), 'bar');
+  t.equal(rs.state, 'waiting');
+
+  t.equal(enqueue('baz'), true);
+  t.equal(rs.state, 'readable');
+  t.equal(rs.read(), 'baz');
+  t.equal(rs.state, 'waiting');
 });
 
 test('ReadableStream enqueue fails when the stream is draining', t => {
@@ -681,14 +662,14 @@ test('ReadableStream errors in shouldApplyBackpressure cause ready to fulfill an
   var callsToShouldApplyBackpressure = 0;
   var rs = new ReadableStream({
     start(enqueue) {
-      setTimeout(() => {
+      Promise.resolve().then(() => {
         try {
           enqueue('hi');
           t.fail('enqueue didn\'t throw');
         } catch (error) {
           t.equal(error, thrownError, 'error thrown by enqueue should be the thrown error');
         }
-      }, 0);
+      });
     },
     strategy: {
       size() {
