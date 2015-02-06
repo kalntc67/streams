@@ -1,6 +1,3 @@
-import ReadableStream from '../../lib/readable-stream';
-import WritableStream from '../../lib/writable-stream';
-
 export default function duckTypedPassThroughTransform() {
   var enqueueInReadable;
   var closeReadable;
