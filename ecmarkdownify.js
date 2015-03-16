@@ -21,6 +21,13 @@ Promise.all([
   spec.loadES6Biblio(),
   spec.loadBiblios()
 ])
+.then(() => {
+  const aos = Array.from(doc.querySelectorAll('[aoid]'));
+  for (const ao of aos) {
+    const aoid = ao.getAttribute('aoid');
+    spec.biblio.ops[aoid] = '#' + ao.id;
+  }
+})
 .then(() => spec.buildAlgs())
 .then(() => {
   const result = jsdom.serializeDocument(doc);

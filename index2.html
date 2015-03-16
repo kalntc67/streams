@@ -1326,68 +1326,14 @@ would look like</p>
 </ol></emu-alg>
 
 
-   <ol>
-  
-    <li> Set <b>this</b>@[[underlyingSource]] to <var>underlyingSource</var>.
-  
-    </li><li> Set <b>this</b>@[[queue]] to a new empty List.
-  
-    </li><li> Set <b>this</b>@[[state]] to <code>"readable"</code>.
-  
-    </li><li> Set <b>this</b>@[[started]], <b>this</b>@[[draining]], and <b>this</b>@[[pullScheduled]] to <b>false</b>.
-  
-    </li><li> Set <b>this</b>@[[reader]], <b>this</b>@[[pullingPromise]], and <b>this</b>@[[storedError]] to
-    <b>undefined</b>.
-  
-    </li><li> Set <b>this</b>@[[enqueue]] to CreateReadableStreamEnqueueFunction(<b>this</b>).
-  
-    </li><li> Set <b>this</b>@[[close]] to CreateReadableStreamCloseFunction(<b>this</b>).
-  
-    </li><li> Set <b>this</b>@[[error]] to CreateReadableStreamErrorFunction(<b>this</b>).
-  
-    </li><li> Let <var>startResult</var> be InvokeOrNoop(<var>underlyingSource</var>, <code>"start"</code>,
-    «‍<b>this</b>@[[enqueue]], <b>this</b>@[[close]], <b>this</b>@[[error]]»).
-  
-    </li><li> ReturnIfAbrupt(<var>startResult</var>).
-  
-    </li><li> Resolve <var>startResult</var> as a promise:
-    
-     <ol>
-      
-      <li> Upon fulfillment,
-        
-       <ol>
-          
-        <li> Set <b>this</b>@[[started]] to <b>true</b>.
-          
-        </li><li> Return CallReadableStreamPull(<b>this</b>).
-        
-       </li></ol>
-       
-      
-      </li><li> Upon rejection with reason <var>r</var>, call-with-rethrow Call(<b>this</b>@[[error]], <b>undefined</b>,
-        «‍<var>r</var>»).
-    
-     </li></ol>
-     
-</li></ol>
-
-
    <h4 class="heading settled" data-level="3.2.4" id="rs-prototype"><span class="secno">3.2.4. </span><span class="content">Properties of the <code>ReadableStream</code> Prototype</span><a class="self-link" href="#rs-prototype"></a></h4>
 
 
    <h5 class="heading settled" data-level="3.2.4.1" id="rs-cancel"><span class="secno">3.2.4.1. </span><span class="content">cancel(reason)</span><a class="self-link" href="#rs-cancel"></a></h5>
 
 
-   <div class="note" role="note">
-  The <code>cancel</code> method <a data-link-type="dfn" href="#cancel-a-readable-stream">cancels</a> the stream, signaling a loss of interest
-  in the stream by a consumer. The supplied <var>reason</var> argument will be given to the underlying source, which
-  may or may not use it.
-</div>
-
-
    <emu-alg><ol>
-  <li>If IsReadableStream(<emu-val>this</emu-val>) is <emu-val>false</emu-val>, return a promise rejected with a <emu-val>TypeError</emu-val> exception.</li>
+  <li>If <a href="#is-readable-stream">IsReadableStream</a>(<emu-val>this</emu-val>) is <emu-val>false</emu-val>, return a promise rejected with a <emu-val>TypeError</emu-val> exception.</li>
   <li>If IsReadableStreamLocked(<emu-val>this</emu-val>) is <emu-val>true</emu-val>, return a promise rejected with a <emu-val>TypeError</emu-val> exception.</li>
   <li>Return CancelReadableStream(<emu-val>this</emu-val>, <var>reason</var>).</li>
 </ol></emu-alg>
@@ -2078,17 +2024,14 @@ a variable <var>stream</var>, that performs the following steps:</p>
 </li></ol>
 
 
-   <h4 class="heading settled" data-level="3.4.9" id="is-readable-stream"><span class="secno">3.4.9. </span><span class="content">IsReadableStream ( x )</span><a class="self-link" href="#is-readable-stream"></a></h4>
+   <h4 aoid="IsReadableStream" class="heading settled" data-level="3.4.9" id="is-readable-stream"><span class="secno">3.4.9. </span><span class="content">IsReadableStream ( x )</span><a class="self-link" href="#is-readable-stream"></a></h4>
 
 
-   <ol>
-  
-    <li> If Type(<var>x</var>) is not Object, return <b>false</b>.
-  
-    </li><li> If <var>x</var> does not have a [[underlyingSource]] internal slot, return <b>false</b>.
-  
-    </li><li> Return <b>true</b>.
-</li></ol>
+   <emu-alg><ol>
+  <li>If <a href="https://people.mozilla.org/~jorendorff/es6-draft.html#sec-ecmascript-data-types-and-values">Type</a>(<var>x</var>) is not Object, return <emu-val>false</emu-val>.</li>
+  <li>If <var>x</var> does not have a [[underlyingSource]] internal slot, return <emu-val>false</emu-val>.</li>
+  <li>Return <emu-val>true</emu-val>.</li>
+</ol></emu-alg>
 
 
    <h4 class="heading settled" data-level="3.4.10" id="is-readable-stream-locked"><span class="secno">3.4.10. </span><span class="content">IsReadableStreamLocked ( stream )</span><a class="self-link" href="#is-readable-stream-locked"></a></h4>

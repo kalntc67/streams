@@ -824,13 +824,13 @@ a variable <var>stream</var>, that performs the following steps:
     ReleaseReadableStreamReader(<var>stream</var>@\[[reader]]).
 </ol>
 
-<h4 id="is-readable-stream">IsReadableStream ( x )</h4>
+<h4 id="is-readable-stream" aoid="IsReadableStream">IsReadableStream ( x )</h4>
 
-<ol>
-  <li> If Type(<var>x</var>) is not Object, return <b>false</b>.
-  <li> If <var>x</var> does not have a \[[underlyingSource]] internal slot, return <b>false</b>.
-  <li> Return <b>true</b>.
-</ol>
+<pre is="emu-alg">
+  1. If Type(_x_) is not Object, return *false*.
+  1. If _x_ does not have a [[underlyingSource]] internal slot, return *false*.
+  1. Return *true*.
+</pre>
 
 <h4 id="is-readable-stream-locked">IsReadableStreamLocked ( stream )</h4>
 
