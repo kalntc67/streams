@@ -21,6 +21,9 @@ Logo: https://resources.whatwg.org/logo-streams.svg
 <style>
   ol > li { margin: 0; }
   .note + .example, .note + .note { margin-top: 1em; }
+
+  emu-alg ol > li { margin: 0; }
+  emu-val { font-weight: bold; }
 </style>
 <script src="https://resources.whatwg.org/file-issue.js" async></script>
 <script src="https://resources.whatwg.org/commit-snapshot-shortcut-key.js" async></script>
@@ -348,52 +351,33 @@ Instances of <code>ReadableStream</code> are created with the internal slots des
   <code>enqueue</code>) when enqueuing into a non-empty queue.
 </div>
 
-<ol>
-  <li> Set <b>this</b>@\[[underlyingSource]] to <var>underlyingSource</var>.
-  <li> Set <b>this</b>@\[[queue]] to a new empty List.
-  <li> Set <b>this</b>@\[[state]] to <code>"readable"</code>.
-  <li> Set <b>this</b>@\[[started]], <b>this</b>@\[[draining]], and <b>this</b>@\[[pullScheduled]] to <b>false</b>.
-  <li> Set <b>this</b>@\[[reader]], <b>this</b>@\[[pullingPromise]], and <b>this</b>@\[[storedError]] to
-    <b>undefined</b>.
-  <li> Set <b>this</b>@\[[enqueue]] to CreateReadableStreamEnqueueFunction(<b>this</b>).
-  <li> Set <b>this</b>@\[[close]] to CreateReadableStreamCloseFunction(<b>this</b>).
-  <li> Set <b>this</b>@\[[error]] to CreateReadableStreamErrorFunction(<b>this</b>).
-  <li> Let <var>startResult</var> be InvokeOrNoop(<var>underlyingSource</var>, <code>"start"</code>,
-    «‍<b>this</b>@\[[enqueue]], <b>this</b>@\[[close]], <b>this</b>@\[[error]]»).
-  <li> ReturnIfAbrupt(<var>startResult</var>).
-  <li> Resolve <var>startResult</var> as a promise:
-    <ol>
-      <li> Upon fulfillment,
-        <ol>
-          <li> Set <b>this</b>@\[[started]] to <b>true</b>.
-          <li> Return CallReadableStreamPull(<b>this</b>).
-        </ol>
-      <li> Upon rejection with reason <var>r</var>, call-with-rethrow Call(<b>this</b>@\[[error]], <b>undefined</b>,
-        «‍<var>r</var>»).
-    </ol>
-</ol>
+<pre is="emu-alg">
+  1. Set *this*@[[underlyingSource]] to _underlyingSource_.
+  1. Set *this*@[[queue]] to a new empty List.
+  1. Set *this*@[[state]] to "readable".
+  1. Set *this*@[[started]], *this*@[[draining]], and *this*@[[pullScheduled]] to *false*.
+  1. Set *this*@[[reader]], *this*@[[pullingPromise]], and *this*@[[storedError]] to *undefined*.
+  1. Set *this*@[[enqueue]] to CreateReadableStreamEnqueueFunction(*this*).
+  1. Set *this*@[[close]] to CreateReadableStreamCloseFunction(*this*).
+  1. Set *this*@[[error]] to CreateReadableStreamErrorFunction(*this*).
+  1. Let _startResult_ be InvokeOrNoop(_underlyingSource_, "start", «*this*@[[enqueue]], *this*@[[close]], *this*@[[error]]»).
+  1. ReturnIfAbrupt(startResult).
+  1. Resolve _startResult_ as a promise:
+    1. Upon fulfillment,
+      1. Set *this*@[[started]] to *true*.
+      1. Return CallReadableStreamPull(*this*).
+    1. Upon rejection with reason _r_, call-with-rethrow Call(*this*@[[error]], *undefined*, «‍_r_»).
+</pre>
 
 <h4 id="rs-prototype">Properties of the <code>ReadableStream</code> Prototype</h4>
 
 <h5 id="rs-cancel">cancel(reason)</h5>
 
-<div class="note">
-  The <code>cancel</code> method <a lt="cancel a readable stream">cancels</a> the stream, signaling a loss of interest
-  in the stream by a consumer. The supplied <var>reason</var> argument will be given to the underlying source, which
-  may or may not use it.
-</div>
-
-<emu-alg>
+<pre is="emu-alg">
   1. If IsReadableStream(*this*) is *false*, return a promise rejected with a *TypeError* exception.
   1. If IsReadableStreamLocked(*this*) is *true*, return a promise rejected with a *TypeError* exception.
   1. Return CancelReadableStream(*this*, _reason_).
-</emu-alg>
-
-<ol>
-  <li> If IsReadableStream(<b>this</b>) is <b>false</b>, return a promise rejected with a <b>TypeError</b> exception.
-  <li> If IsReadableStreamLocked(<b>this</b>) is <b>true</b>, return a promise rejected with a <b>TypeError</b> exception.
-  <li> Return CancelReadableStream(<b>this</b>, <var>reason</var>).
-</ol>
+</pre>
 
 <h5 id="rs-get-reader">getReader()</h5>
 

@@ -1,0 +1,4127 @@
+<!DOCTYPE html><html lang="en"><head>
+  <meta charset="utf-8">
+  
+  
+  <title>Streams Standard</title>
+  
+  
+  <link href="https://www.whatwg.org/style/specification" rel="stylesheet">
+  
+  
+  <link href="https://resources.whatwg.org/bikeshed.css" rel="stylesheet">
+  
+  
+  <link href="https://resources.whatwg.org/logo-streams.svg" rel="icon">
+  
+
+  <meta content="Bikeshed 1.0.0" name="generator">
+  <style>
+  ol > li { margin: 0; }
+  .note + .example, .note + .note { margin-top: 1em; }
+
+  emu-alg ol > li { margin: 0; }
+  emu-val { font-weight: bold; }
+</style>
+  
+
+  <script async="" src="https://resources.whatwg.org/file-issue.js"></script>
+  
+
+  <script async="" src="https://resources.whatwg.org/commit-snapshot-shortcut-key.js"></script>
+  
+
+
+
+  <script>self = (typeof window !== 'undefined')
+	? window   // if in browser
+	: (
+		(typeof WorkerGlobalScope !== 'undefined' && self instanceof WorkerGlobalScope)
+		? self // if in worker
+		: {}   // if in node js
+	);
+
+/**
+ * Prism: Lightweight, robust, elegant syntax highlighting
+ * MIT license http://www.opensource.org/licenses/mit-license.php/
+ * @author Lea Verou http://lea.verou.me
+ */
+
+var Prism = (function(){
+
+// Private helper vars
+var lang = /\blang(?:uage)?-(?!\*)(\w+)\b/i;
+
+var _ = self.Prism = {
+	util: {
+		encode: function (tokens) {
+			if (tokens instanceof Token) {
+				return new Token(tokens.type, _.util.encode(tokens.content), tokens.alias);
+			} else if (_.util.type(tokens) === 'Array') {
+				return tokens.map(_.util.encode);
+			} else {
+				return tokens.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/\u00a0/g, ' ');
+			}
+		},
+
+		type: function (o) {
+			return Object.prototype.toString.call(o).match(/\[object (\w+)\]/)[1];
+		},
+
+		// Deep clone a language definition (e.g. to extend it)
+		clone: function (o) {
+			var type = _.util.type(o);
+
+			switch (type) {
+				case 'Object':
+					var clone = {};
+
+					for (var key in o) {
+						if (o.hasOwnProperty(key)) {
+							clone[key] = _.util.clone(o[key]);
+						}
+					}
+
+					return clone;
+
+				case 'Array':
+					return o.slice();
+			}
+
+			return o;
+		}
+	},
+
+	languages: {
+		extend: function (id, redef) {
+			var lang = _.util.clone(_.languages[id]);
+
+			for (var key in redef) {
+				lang[key] = redef[key];
+			}
+
+			return lang;
+		},
+
+		// Insert a token before another token in a language literal
+		insertBefore: function (inside, before, insert, root) {
+			root = root || _.languages;
+			var grammar = root[inside];
+			var ret = {};
+
+			for (var token in grammar) {
+
+				if (grammar.hasOwnProperty(token)) {
+
+					if (token == before) {
+
+						for (var newToken in insert) {
+
+							if (insert.hasOwnProperty(newToken)) {
+								ret[newToken] = insert[newToken];
+							}
+						}
+					}
+
+					ret[token] = grammar[token];
+				}
+			}
+
+			return root[inside] = ret;
+		},
+
+		// Traverse a language definition with Depth First Search
+		DFS: function(o, callback, type) {
+			for (var i in o) {
+				if (o.hasOwnProperty(i)) {
+					callback.call(o, i, o[i], type || i);
+
+					if (_.util.type(o[i]) === 'Object') {
+						_.languages.DFS(o[i], callback);
+					} else if (_.util.type(o[i]) === 'Array') {
+						_.languages.DFS(o[i], callback, i);
+					}
+				}
+			}
+		}
+	},
+
+	highlightAll: function(async, callback) {
+		var elements = document.querySelectorAll('code[class*="language-"], [class*="language-"] code, code[class*="lang-"], [class*="lang-"] code');
+		for (var i=0, element; element = elements[i++];) {
+			if (element.classList.contains("idl")) {
+				// Bikeshed handles IDL blocks already.
+				continue;
+			}
+			_.highlightElement(element, async === true, callback);
+		}
+
+		var elements = document.querySelectorAll('pre[class*="language-"], [class*="language-"] pre, pre[class*="lang-"], [class*="lang-"] pre');
+		for (var i=0, element; element = elements[i++];) {
+			if (element.firstElementChild && element.firstElementChild.tagName.toLowerCase() == "code") {
+				// Already handled by the previous loop
+				continue;
+			}
+			if (element.classList.contains("idl")) {
+				// Bikeshed handles IDL blocks already.
+				continue;
+			}
+			_.highlightElement(element, async === true, callback);
+		}
+	},
+
+	highlightElement: function(element, async, callback) {
+		// Find language
+		var language, grammar, parent = element;
+
+		while (parent && !lang.test(parent.className)) {
+			parent = parent.parentNode;
+		}
+
+		if (parent) {
+			language = (parent.className.match(lang) || [,''])[1];
+			grammar = _.languages[language];
+		}
+
+		if (!grammar) {
+			return;
+		}
+
+		// Set language on the element, if not present
+		element.className = element.className.replace(lang, '').replace(/\s+/g, ' ') + ' language-' + language;
+
+		// Set language on the parent, for styling
+		parent = element.parentNode;
+
+		if (/pre/i.test(parent.nodeName)) {
+			parent.className = parent.className.replace(lang, '').replace(/\s+/g, ' ') + ' language-' + language;
+		}
+
+		var code = element.textContent;
+
+		if(!code) {
+			return;
+		}
+
+		var env = {
+			element: element,
+			language: language,
+			grammar: grammar,
+			code: code
+		};
+
+		_.hooks.run('before-highlight', env);
+
+		if (async && self.Worker) {
+			var worker = new Worker(_.filename);
+
+			worker.onmessage = function(evt) {
+				env.highlightedCode = Token.stringify(JSON.parse(evt.data), language);
+
+				_.hooks.run('before-insert', env);
+
+				env.element.innerHTML = env.highlightedCode;
+
+				callback && callback.call(env.element);
+				_.hooks.run('after-highlight', env);
+			};
+
+			worker.postMessage(JSON.stringify({
+				language: env.language,
+				code: env.code
+			}));
+		}
+		else {
+			env.highlightedCode = _.highlight(env.code, env.grammar, env.language)
+
+			_.hooks.run('before-insert', env);
+
+			env.element.innerHTML = env.highlightedCode;
+
+			callback && callback.call(element);
+
+			_.hooks.run('after-highlight', env);
+		}
+	},
+
+	highlight: function (text, grammar, language) {
+		var tokens = _.tokenize(text, grammar);
+		return Token.stringify(_.util.encode(tokens), language);
+	},
+
+	tokenize: function(text, grammar, language) {
+		var Token = _.Token;
+
+		var strarr = [text];
+
+		var rest = grammar.rest;
+
+		if (rest) {
+			for (var token in rest) {
+				grammar[token] = rest[token];
+			}
+
+			delete grammar.rest;
+		}
+
+		tokenloop: for (var token in grammar) {
+			if(!grammar.hasOwnProperty(token) || !grammar[token]) {
+				continue;
+			}
+
+			var patterns = grammar[token];
+			patterns = (_.util.type(patterns) === "Array") ? patterns : [patterns];
+
+			for (var j = 0; j < patterns.length; ++j) {
+				var pattern = patterns[j],
+					inside = pattern.inside,
+					lookbehind = !!pattern.lookbehind,
+					lookbehindLength = 0,
+					alias = pattern.alias;
+
+				pattern = pattern.pattern || pattern;
+
+				for (var i=0; i<strarr.length; i++) { // Don’t cache length as it changes during the loop
+
+					var str = strarr[i];
+
+					if (strarr.length > text.length) {
+						// Something went terribly wrong, ABORT, ABORT!
+						break tokenloop;
+					}
+
+					if (str instanceof Token) {
+						continue;
+					}
+
+					pattern.lastIndex = 0;
+
+					var match = pattern.exec(str);
+
+					if (match) {
+						if(lookbehind) {
+							lookbehindLength = match[1].length;
+						}
+
+						var from = match.index - 1 + lookbehindLength,
+							match = match[0].slice(lookbehindLength),
+							len = match.length,
+							to = from + len,
+							before = str.slice(0, from + 1),
+							after = str.slice(to + 1);
+
+						var args = [i, 1];
+
+						if (before) {
+							args.push(before);
+						}
+
+						var wrapped = new Token(token, inside? _.tokenize(match, inside) : match, alias);
+
+						args.push(wrapped);
+
+						if (after) {
+							args.push(after);
+						}
+
+						Array.prototype.splice.apply(strarr, args);
+					}
+				}
+			}
+		}
+
+		return strarr;
+	},
+
+	hooks: {
+		all: {},
+
+		add: function (name, callback) {
+			var hooks = _.hooks.all;
+
+			hooks[name] = hooks[name] || [];
+
+			hooks[name].push(callback);
+		},
+
+		run: function (name, env) {
+			var callbacks = _.hooks.all[name];
+
+			if (!callbacks || !callbacks.length) {
+				return;
+			}
+
+			for (var i=0, callback; callback = callbacks[i++];) {
+				callback(env);
+			}
+		}
+	}
+};
+
+var Token = _.Token = function(type, content, alias) {
+	this.type = type;
+	this.content = content;
+	this.alias = alias;
+};
+
+Token.stringify = function(o, language, parent) {
+	if (typeof o == 'string') {
+		return o;
+	}
+
+	if (Object.prototype.toString.call(o) == '[object Array]') {
+		return o.map(function(element) {
+			return Token.stringify(element, language, o);
+		}).join('');
+	}
+
+	var env = {
+		type: o.type,
+		content: Token.stringify(o.content, language, parent),
+		tag: 'span',
+		classes: ['token', o.type],
+		attributes: {},
+		language: language,
+		parent: parent
+	};
+
+	if (env.type == 'comment') {
+		env.attributes['spellcheck'] = 'true';
+	}
+
+	if (o.alias) {
+		var aliases = _.util.type(o.alias) === 'Array' ? o.alias : [o.alias];
+		Array.prototype.push.apply(env.classes, aliases);
+	}
+
+	_.hooks.run('wrap', env);
+
+	var attributes = '';
+
+	for (var name in env.attributes) {
+		attributes += name + '="' + (env.attributes[name] || '') + '"';
+	}
+
+	return '<' + env.tag + ' class="' + env.classes.join(' ') + '" ' + attributes + '>' + env.content + '</' + env.tag + '>';
+
+};
+
+if (!self.document) {
+	if (!self.addEventListener) {
+		// in Node.js
+		return self.Prism;
+	}
+ 	// In worker
+	self.addEventListener('message', function(evt) {
+		var message = JSON.parse(evt.data),
+		    lang = message.language,
+		    code = message.code;
+
+		self.postMessage(JSON.stringify(_.util.encode(_.tokenize(code, _.languages[lang]))));
+		self.close();
+	}, false);
+
+	return self.Prism;
+}
+
+// Get current script and highlight
+var script = document.getElementsByTagName('script');
+
+script = script[script.length - 1];
+
+if (script) {
+	_.filename = script.src;
+
+	if (document.addEventListener && !script.hasAttribute('data-manual')) {
+		document.addEventListener('DOMContentLoaded', _.highlightAll);
+	}
+}
+
+return self.Prism;
+
+})();
+
+if (typeof module !== 'undefined' && module.exports) {
+	module.exports = Prism;
+}
+;
+Prism.languages.clike = {
+	'comment': [
+		{
+			pattern: /(^|[^\\])\/\*[\w\W]*?\*\//g,
+			lookbehind: true
+		},
+		{
+			pattern: /(^|[^\\:])\/\/.*?(\r?\n|$)/g,
+			lookbehind: true
+		}
+	],
+	'string': /("|')(\\?.)*?\1/g,
+	'class-name': {
+		pattern: /((?:(?:class|interface|extends|implements|trait|instanceof|new)\s+)|(?:catch\s+\())[a-z0-9_\.\\]+/ig,
+		lookbehind: true,
+		inside: {
+			punctuation: /(\.|\\)/
+		}
+	},
+	'keyword': /\b(if|else|while|do|for|return|in|instanceof|function|new|try|throw|catch|finally|null|break|continue)\b/g,
+	'boolean': /\b(true|false)\b/g,
+	'function': {
+		pattern: /[a-z0-9_]+\(/ig,
+		inside: {
+			punctuation: /\(/
+		}
+	},
+	'number': /\b-?(0x[\dA-Fa-f]+|\d*\.?\d+([Ee]-?\d+)?)\b/g,
+	'operator': /[-+]{1,2}|!|<=?|>=?|={1,3}|&{1,2}|\|?\||\?|\*|\/|\~|\^|\%/g,
+	'ignore': /&(lt|gt|amp);/gi,
+	'punctuation': /[{}[\];(),.:]/g
+};
+;
+Prism.languages.javascript = Prism.languages.extend('clike', {
+	'keyword': /\b(break|case|catch|class|const|continue|debugger|default|delete|do|else|enum|export|extends|false|finally|for|function|get|if|implements|import|in|instanceof|interface|let|new|null|package|private|protected|public|return|set|static|super|switch|this|throw|true|try|typeof|var|void|while|with|yield)\b/g,
+	'number': /\b-?(0x[\dA-Fa-f]+|\d*\.?\d+([Ee]-?\d+)?|NaN|-?Infinity)\b/g
+});
+
+Prism.languages.insertBefore('javascript', 'keyword', {
+	'regex': {
+		pattern: /(^|[^/])\/(?!\/)(\[.+?]|\\.|[^/\r\n])+\/[gim]{0,3}(?=\s*($|[\r\n,.;})]))/g,
+		lookbehind: true
+	}
+});
+
+if (Prism.languages.markup) {
+	Prism.languages.insertBefore('markup', 'tag', {
+		'script': {
+			pattern: /<script[\w\W]*?>[\w\W]*?<\/script>/ig,
+			inside: {
+				'tag': {
+					pattern: /<script[\w\W]*?>|<\/script>/ig,
+					inside: Prism.languages.markup.tag.inside
+				},
+				rest: Prism.languages.javascript
+			}
+		}
+	});
+}
+;
+</script>
+  <style>/* http://prismjs.com/download.html?themes=prism&languages=clike */
+/**
+ * prism.js default theme for JavaScript, CSS and HTML
+ * Based on dabblet (http://dabblet.com)
+ * @author Lea Verou
+ */
+
+code[class*="language-"],
+pre[class*="language-"] {
+	color: black;
+	text-shadow: 0 1px white;
+	font-family: Consolas, Monaco, 'Andale Mono', monospace;
+	direction: ltr;
+	text-align: left;
+	white-space: pre;
+	word-spacing: normal;
+	word-break: normal;
+	line-height: 1.5;
+
+	-moz-tab-size: 4;
+	-o-tab-size: 4;
+	tab-size: 4;
+
+	-webkit-hyphens: none;
+	-moz-hyphens: none;
+	-ms-hyphens: none;
+	hyphens: none;
+}
+
+pre[class*="language-"]::-moz-selection, pre[class*="language-"] ::-moz-selection,
+code[class*="language-"]::-moz-selection, code[class*="language-"] ::-moz-selection {
+	text-shadow: none;
+	background: #b3d4fc;
+}
+
+pre[class*="language-"]::selection, pre[class*="language-"] ::selection,
+code[class*="language-"]::selection, code[class*="language-"] ::selection {
+	text-shadow: none;
+	background: #b3d4fc;
+}
+
+@media print {
+	code[class*="language-"],
+	pre[class*="language-"] {
+		text-shadow: none;
+	}
+}
+
+/* Code blocks */
+pre[class*="language-"] {
+	padding: 1em;
+	margin: .5em 0;
+	overflow: auto;
+}
+
+:not(pre) > code[class*="language-"],
+pre[class*="language-"] {
+	background: #f5f2f0;
+}
+
+/* Inline code */
+:not(pre) > code[class*="language-"] {
+	padding: .1em;
+	border-radius: .3em;
+}
+
+.token.comment,
+.token.prolog,
+.token.doctype,
+.token.cdata {
+	color: slategray;
+}
+
+.token.punctuation {
+	color: #999;
+}
+
+.namespace {
+	opacity: .7;
+}
+
+.token.property,
+.token.tag,
+.token.boolean,
+.token.number,
+.token.constant,
+.token.symbol,
+.token.deleted {
+	color: #905;
+}
+
+.token.selector,
+.token.attr-name,
+.token.string,
+.token.char,
+.token.builtin,
+.token.inserted {
+	color: #690;
+}
+
+.token.operator,
+.token.entity,
+.token.url,
+.language-css .token.string,
+.style .token.string {
+	color: #a67f59;
+	background: hsla(0, 0%, 100%, .5);
+}
+
+.token.atrule,
+.token.attr-value,
+.token.keyword {
+	color: #07a;
+}
+
+.token.function {
+	color: #DD4A68;
+}
+
+.token.regex,
+.token.important,
+.token.variable {
+	color: #e90;
+}
+
+.token.important {
+	font-weight: bold;
+}
+
+.token.entity {
+	cursor: help;
+}
+</style>
+ </head>
+ <body class="h-entry status-LS">
+
+  <div class="head">
+  
+   <p data-fill-with="logo"><a class="logo" href="http://whatwg.org/">
+    <img alt="WHATWG" height="100" src="https://resources.whatwg.org/logo-streams.svg">
+</a>
+</p>
+  
+   <h1 class="p-name no-ref" id="title">Streams</h1>
+  
+   <h2 class="no-num no-toc no-ref heading settled" id="subtitle"><span class="content">Living Standard — Last Updated
+    <time class="dt-updated" datetime="2015-03-16">16 March 2015</time></span></h2>
+  
+   <div data-fill-with="spec-metadata">
+    <dl>
+     <dt class="editor">Editor:
+     </dt><dd class="editor p-author h-card vcard"><a class="p-name fn u-url url" href="https://domenic.me/">Domenic Denicola</a> (<a class="p-org org" href="https://www.google.com/">Google</a>) <a class="u-email email" href="mailto:d@domenic.me">d@domenic.me</a>
+     </dd><dt>Version History:
+     </dt><dd><span><a href="https://github.com/whatwg/streams/commits">https://github.com/whatwg/streams/commits</a></span>
+     </dd><dd><span><a href="https://twitter.com/streamsstandard">@streamsstandard</a></span>
+     </dd><dt>Participate:
+     </dt><dd><span><a href="https://github.com/whatwg/streams/issues/new">File an issue</a> (<a href="https://github.com/whatwg/streams/issues?state=open">open issues</a>)</span>
+     </dd><dd><span><a href="https://wiki.whatwg.org/wiki/IRC">IRC: #whatwg on Freenode</a></span>
+    </dd></dl>
+   </div>
+  
+   <div data-fill-with="warning"></div>
+</div>
+  
+
+
+  <h2 class="no-num no-toc no-ref heading settled" id="abstract"><span class="content">Abstract</span></h2>
+  
+
+  <div class="p-summary" data-fill-with="abstract">
+   <p>This specification provides APIs for creating, composing, and consuming streams of data.
+
+These streams are designed to map efficiently to low-level I/O primitives, and allow easy
+composition with built-in backpressure and queuing. On top of streams, the web platform can
+build higher-level abstractions, such as filesystem or socket APIs, while at the same time
+users can use the supplied tools to build their own streams which integrate well with those
+of the web platform.</p>
+
+</div>
+  
+
+  <div data-fill-with="at-risk"></div>
+  
+
+
+  <h2 class="no-num no-toc no-ref heading settled" id="contents"><span class="content">Table of Contents</span></h2>
+  
+
+  <div data-fill-with="table-of-contents" role="navigation">
+   <ul class="toc" role="directory">
+    <li><a href="#intro"><span class="secno">1</span> <span class="content">Introduction</span></a>
+    </li><li><a href="#model"><span class="secno">2</span> <span class="content">Model</span></a>
+     <ul class="toc">
+      <li><a href="#rs-model"><span class="secno">2.1</span> <span class="content">Readable Streams</span></a>
+      </li><li><a href="#ws-model"><span class="secno">2.2</span> <span class="content">Writable Streams</span></a>
+      </li><li><a href="#ts-model"><span class="secno">2.3</span> <span class="content">Transform Streams</span></a>
+      </li><li><a href="#pipe-chains"><span class="secno">2.4</span> <span class="content">Pipe Chains and Backpressure</span></a>
+      </li><li><a href="#queuing-strategies"><span class="secno">2.5</span> <span class="content">Internal Queues and Queuing Strategies</span></a>
+      </li><li><a href="#locking"><span class="secno">2.6</span> <span class="content">Locking</span></a>
+     </li></ul>
+    </li><li><a href="#rs"><span class="secno">3</span> <span class="content">Readable Streams</span></a>
+     <ul class="toc">
+      <li><a href="#rs-intro"><span class="secno">3.1</span> <span class="content">Using Readable Streams</span></a>
+      </li><li><a href="#rs-class"><span class="secno">3.2</span> <span class="content">Class <code>ReadableStream</code></span></a>
+       <ul class="toc">
+        <li><a href="#rs-class-definition"><span class="secno">3.2.1</span> <span class="content">Class Definition</span></a>
+        </li><li><a href="#rs-internal-slots"><span class="secno">3.2.2</span> <span class="content">Internal Slots</span></a>
+        </li><li><a href="#rs-constructor"><span class="secno">3.2.3</span> <span class="content">new ReadableStream(underlyingSource = {})</span></a>
+        </li><li><a href="#rs-prototype"><span class="secno">3.2.4</span> <span class="content">Properties of the <code>ReadableStream</code> Prototype</span></a>
+         <ul class="toc">
+          <li><a href="#rs-cancel"><span class="secno">3.2.4.1</span> <span class="content">cancel(reason)</span></a>
+          </li><li><a href="#rs-get-reader"><span class="secno">3.2.4.2</span> <span class="content">getReader()</span></a>
+          </li><li><a href="#rs-pipe-through"><span class="secno">3.2.4.3</span> <span class="content">pipeThrough({ writable, readable }, options)</span></a>
+          </li><li><a href="#rs-pipe-to"><span class="secno">3.2.4.4</span> <span class="content">pipeTo(dest, { preventClose, preventAbort, preventCancel } = {})</span></a>
+         </li></ul>
+       </li></ul>
+      </li><li><a href="#reader-class"><span class="secno">3.3</span> <span class="content">Class <code>ReadableStreamReader</code></span></a>
+       <ul class="toc">
+        <li><a href="#reader-class-definition"><span class="secno">3.3.1</span> <span class="content">Class Definition</span></a>
+        </li><li><a href="#reader-internal-slots"><span class="secno">3.3.2</span> <span class="content">Internal Slots</span></a>
+        </li><li><a href="#reader-constructor"><span class="secno">3.3.3</span> <span class="content">new ReadableStreamReader(stream)</span></a>
+        </li><li><a href="#reader-prototype"><span class="secno">3.3.4</span> <span class="content">Properties of the <code>ReadableStreamReader</code> Prototype</span></a>
+         <ul class="toc">
+          <li><a href="#reader-closed"><span class="secno">3.3.4.1</span> <span class="content">get closed</span></a>
+          </li><li><a href="#reader-cancel"><span class="secno">3.3.4.2</span> <span class="content">cancel(reason)</span></a>
+          </li><li><a href="#reader-read"><span class="secno">3.3.4.3</span> <span class="content">read()</span></a>
+          </li><li><a href="#reader-release-lock"><span class="secno">3.3.4.4</span> <span class="content">releaseLock()</span></a>
+         </li></ul>
+       </li></ul>
+      </li><li><a href="#rs-abstract-ops"><span class="secno">3.4</span> <span class="content">Readable Stream Abstract Operations</span></a>
+       <ul class="toc">
+        <li><a href="#acquire-readable-stream-reader"><span class="secno">3.4.1</span> <span class="content">AcquireReadableStreamReader ( stream )</span></a>
+        </li><li><a href="#call-readable-stream-pull"><span class="secno">3.4.2</span> <span class="content">CallReadableStreamPull ( stream )</span></a>
+        </li><li><a href="#cancel-readable-stream"><span class="secno">3.4.3</span> <span class="content">CancelReadableStream ( stream, reason )</span></a>
+        </li><li><a href="#close-readable-stream"><span class="secno">3.4.4</span> <span class="content">CloseReadableStream ( stream )</span></a>
+        </li><li><a href="#close-readable-stream-reader"><span class="secno">3.4.5</span> <span class="content">CloseReadableStreamReader ( reader )</span></a>
+        </li><li><a href="#create-readable-stream-close-function"><span class="secno">3.4.6</span> <span class="content">CreateReadableStreamCloseFunction ( stream )</span></a>
+        </li><li><a href="#create-readable-stream-enqueue-function"><span class="secno">3.4.7</span> <span class="content">CreateReadableStreamEnqueueFunction ( stream )</span></a>
+        </li><li><a href="#create-readable-stream-error-function"><span class="secno">3.4.8</span> <span class="content">CreateReadableStreamErrorFunction ( stream )</span></a>
+        </li><li><a href="#is-readable-stream"><span class="secno">3.4.9</span> <span class="content">IsReadableStream ( x )</span></a>
+        </li><li><a href="#is-readable-stream-locked"><span class="secno">3.4.10</span> <span class="content">IsReadableStreamLocked ( stream )</span></a>
+        </li><li><a href="#is-readable-stream-reader"><span class="secno">3.4.11</span> <span class="content">IsReadableStreamReader ( x )</span></a>
+        </li><li><a href="#release-readable-stream-reader"><span class="secno">3.4.12</span> <span class="content">ReleaseReadableStreamReader ( reader )</span></a>
+        </li><li><a href="#should-readable-stream-apply-backpressure"><span class="secno">3.4.13</span> <span class="content">ShouldReadableStreamApplyBackpressure ( stream )</span></a>
+       </li></ul>
+     </li></ul>
+    </li><li><a href="#ws"><span class="secno">4</span> <span class="content">Writable Streams</span></a>
+     <ul class="toc">
+      <li><a href="#ws-intro"><span class="secno">4.1</span> <span class="content">Using Writable Streams</span></a>
+      </li><li><a href="#ws-class"><span class="secno">4.2</span> <span class="content">Class <code>WritableStream</code></span></a>
+       <ul class="toc">
+        <li><a href="#ws-class-definition"><span class="secno">4.2.1</span> <span class="content">Class Definition</span></a>
+        </li><li><a href="#ws-internal-slots"><span class="secno">4.2.2</span> <span class="content">Internal Slots</span></a>
+        </li><li><a href="#ws-constructor"><span class="secno">4.2.3</span> <span class="content">new WritableStream(underlyingSink = {})</span></a>
+        </li><li><a href="#ws-prototype"><span class="secno">4.2.4</span> <span class="content">Properties of the <code>WritableStream</code> Prototype</span></a>
+         <ul class="toc">
+          <li><a href="#ws-closed"><span class="secno">4.2.4.1</span> <span class="content">get closed</span></a>
+          </li><li><a href="#ws-ready"><span class="secno">4.2.4.2</span> <span class="content">get ready</span></a>
+          </li><li><a href="#ws-state"><span class="secno">4.2.4.3</span> <span class="content">get state</span></a>
+          </li><li><a href="#ws-abort"><span class="secno">4.2.4.4</span> <span class="content">abort(reason)</span></a>
+          </li><li><a href="#ws-close"><span class="secno">4.2.4.5</span> <span class="content">close()</span></a>
+          </li><li><a href="#ws-write"><span class="secno">4.2.4.6</span> <span class="content">write(chunk)</span></a>
+         </li></ul>
+       </li></ul>
+      </li><li><a href="#ws-abstract-ops"><span class="secno">4.3</span> <span class="content">Writable Stream Abstract Operations</span></a>
+       <ul class="toc">
+        <li><a href="#call-or-schedule-writable-stream-advance-queue"><span class="secno">4.3.1</span> <span class="content">CallOrScheduleWritableStreamAdvanceQueue ( stream )</span></a>
+        </li><li><a href="#close-writable-stream"><span class="secno">4.3.2</span> <span class="content">CloseWritableStream ( stream )</span></a>
+        </li><li><a href="#create-writable-stream-error-function"><span class="secno">4.3.3</span> <span class="content">CreateWritableStreamErrorFunction ( stream )</span></a>
+        </li><li><a href="#is-writable-stream"><span class="secno">4.3.4</span> <span class="content">IsWritableStream ( x )</span></a>
+        </li><li><a href="#sync-writable-stream-state-with-queue"><span class="secno">4.3.5</span> <span class="content">SyncWritableStreamStateWithQueue ( stream )</span></a>
+        </li><li><a href="#writable-stream-advance-queue"><span class="secno">4.3.6</span> <span class="content">WritableStreamAdvanceQueue ( stream )</span></a>
+       </li></ul>
+     </li></ul>
+    </li><li><a href="#ts"><span class="secno">5</span> <span class="content">Transform Streams</span></a>
+    </li><li><a href="#other-stuff"><span class="secno">6</span> <span class="content">Other Stream APIs and Operations</span></a>
+     <ul class="toc">
+      <li><a href="#blqs-class"><span class="secno">6.1</span> <span class="content">Class <code>ByteLengthQueuingStrategy</code></span></a>
+       <ul class="toc">
+        <li><a href="#blqs-class-definition"><span class="secno">6.1.1</span> <span class="content">Class Definition</span></a>
+        </li><li><a href="#blqs-internal-slots"><span class="secno">6.1.2</span> <span class="content">Internal Slots</span></a>
+        </li><li><a href="#blqs-constructor"><span class="secno">6.1.3</span> <span class="content">new ByteLengthQueuingStrategy({ highWaterMark })</span></a>
+        </li><li><a href="#blqs-prototype"><span class="secno">6.1.4</span> <span class="content">Properties of the <code>ByteLengthQueuingStrategy</code> Prototype</span></a>
+         <ul class="toc">
+          <li><a href="#blqs-should-apply-backpressure"><span class="secno">6.1.4.1</span> <span class="content">shouldApplyBackpressure(queueSize)</span></a>
+          </li><li><a href="#blqs-size"><span class="secno">6.1.4.2</span> <span class="content">size(chunk)</span></a>
+         </li></ul>
+       </li></ul>
+      </li><li><a href="#cqs-class"><span class="secno">6.2</span> <span class="content">Class <code>CountQueuingStrategy</code></span></a>
+       <ul class="toc">
+        <li><a href="#cqs-class-definition"><span class="secno">6.2.1</span> <span class="content">Class Definition</span></a>
+        </li><li><a href="#cqs-internal-slots"><span class="secno">6.2.2</span> <span class="content">Internal Slots</span></a>
+        </li><li><a href="#cqs-constructor"><span class="secno">6.2.3</span> <span class="content">new CountQueuingStrategy({ highWaterMark })</span></a>
+        </li><li><a href="#cqs-prototype"><span class="secno">6.2.4</span> <span class="content">Properties of the <code>CountQueuingStrategy</code> Prototype</span></a>
+         <ul class="toc">
+          <li><a href="#cqs-should-apply-backpressure"><span class="secno">6.2.4.1</span> <span class="content">shouldApplyBackpressure(queueSize)</span></a>
+          </li><li><a href="#cqs-size"><span class="secno">6.2.4.2</span> <span class="content">size()</span></a>
+         </li></ul>
+       </li></ul>
+      </li><li><a href="#queue-with-sizes"><span class="secno">6.3</span> <span class="content">Queue-with-Sizes Operations</span></a>
+       <ul class="toc">
+        <li><a href="#dequeue-value"><span class="secno">6.3.1</span> <span class="content">DequeueValue ( queue )</span></a>
+        </li><li><a href="#enqueue-value-with-size"><span class="secno">6.3.2</span> <span class="content">EnqueueValueWithSize ( queue, value, size )</span></a>
+        </li><li><a href="#get-total-queue-size"><span class="secno">6.3.3</span> <span class="content">GetTotalQueueSize ( queue )</span></a>
+        </li><li><a href="#peek-queue-value"><span class="secno">6.3.4</span> <span class="content">PeekQueueValue ( queue )</span></a>
+       </li></ul>
+      </li><li><a href="#misc-abstract-ops"><span class="secno">6.4</span> <span class="content">Miscellaneous Operations</span></a>
+       <ul class="toc">
+        <li><a href="#invoke-or-noop"><span class="secno">6.4.1</span> <span class="content">InvokeOrNoop ( O, P, args )</span></a>
+        </li><li><a href="#promise-invoke-or-fallback-or-noop"><span class="secno">6.4.2</span> <span class="content">PromiseInvokeOrFallbackOrNoop ( O, P1, args1, P2, args2 )</span></a>
+        </li><li><a href="#promise-invoke-or-noop"><span class="secno">6.4.3</span> <span class="content">PromiseInvokeOrNoop ( O, P, args )</span></a>
+       </li></ul>
+     </li></ul>
+    </li><li><a href="#globals"><span class="secno">7</span> <span class="content">Global Properties</span></a>
+    </li><li><a href="#other-streams"><span class="secno">8</span> <span class="content">Other Stream Implementations</span></a>
+    </li><li><a href="#creating-examples"><span class="secno">9</span> <span class="content">Examples of Creating Streams</span></a>
+     <ul class="toc">
+      <li><a href="#example-rs-push-no-backpressure"><span class="secno">9.1</span> <span class="content">A readable stream with an underlying push source (no backpressure support)</span></a>
+      </li><li><a href="#example-rs-push-backpressure"><span class="secno">9.2</span> <span class="content">A readable stream with an underlying push source and backpressure support</span></a>
+      </li><li><a href="#example-rs-pull"><span class="secno">9.3</span> <span class="content">A readable stream with an underlying pull source</span></a>
+      </li><li><a href="#example-ws-no-backpressure"><span class="secno">9.4</span> <span class="content">A writable stream with no backpressure or success signals</span></a>
+      </li><li><a href="#example-ws-backpressure"><span class="secno">9.5</span> <span class="content">A writable stream with backpressure and success signals</span></a>
+      </li><li><a href="#example-both"><span class="secno">9.6</span> <span class="content">A { readable, writable } stream pair wrapping the same underlying resource</span></a>
+     </li></ul>
+    </li><li><a href="#state-machines"><span class="secno">10</span> <span class="content">State Machine Diagrams</span></a>
+     <ul class="toc">
+      <li><a href="#rs-state-diagram"><span class="secno">10.1</span> <span class="content">The Readable Stream State Diagram</span></a>
+      </li><li><a href="#ws-state-diagram"><span class="secno">10.2</span> <span class="content">The Writable Stream State Diagram</span></a>
+     </li></ul>
+    </li><li><a href="#conventions"><span class="secno"></span> <span class="content">Conventions</span></a>
+    </li><li><a href="#acks"><span class="secno"></span> <span class="content">Acknowledgments</span></a>
+    </li><li><a href="#conformance"><span class="secno"></span> <span class="content">Conformance</span></a>
+    </li><li><a href="#index"><span class="secno"></span> <span class="content">Index</span></a>
+     <ul class="toc">
+      <li><a href="#index-defined-here"><span class="secno"></span> <span class="content">Terms defined by this specification</span></a>
+     </li></ul>
+    </li><li><a href="#references"><span class="secno"></span> <span class="content">References</span></a>
+     <ul class="toc">
+      <li><a href="#normative"><span class="secno"></span> <span class="content">Normative References</span></a>
+      </li><li><a href="#informative"><span class="secno"></span> <span class="content">Informative References</span></a>
+     </li></ul>
+   </li></ul></div>
+  
+
+  <main>
+
+
+
+   <h2 class="heading settled" data-level="1" id="intro"><span class="secno">1. </span><span class="content">Introduction</span><a class="self-link" href="#intro"></a></h2>
+
+
+   <p><em>This section is non-normative.</em></p>
+
+
+   <p>Large swathes of the web platform are built on streaming data: that is, data that is created, processed, and consumed
+in an incremental fashion, without ever reading all of it into memory. The Streams Standard provides a common set of
+APIs for creating and interfacing with such streaming data, embodied in <a data-link-type="dfn" href="#readable-stream">readable streams</a>,
+<a data-link-type="dfn" href="#writable-stream">writable streams</a>, and <a data-link-type="dfn" href="#transform-stream">transform streams</a>.</p>
+
+
+   <p>This standard provides the base stream primitives which other parts of the web platform can use to expose their
+streaming data. For example, <a data-link-type="biblio" href="#biblio-fetch">[FETCH]</a> could expose request bodies as a writable stream, or response bodies as a
+readable stream. More generally, the platform is full of streaming abstractions waiting to be expressed as streams:
+multimedia streams, file streams, interprocess communication, and more benefit from being able to process data
+incrementally instead of buffering it all into memory and processing it in one go. By providing the foundation for
+these streams to be exposed to developers, the Streams Standard enables use cases like:</p>
+
+
+   <ul>
+  
+    <li> Video effects: piping a readable video stream through a transform stream that applies effects in real time.
+  
+    </li><li> Decompression: piping a file stream through a transform stream that selectively decompresses files from a
+    <kbd>.tgz</kbd> archive, turning them into <code>img</code> elements as the user scrolls through an image gallery.
+  
+    </li><li> Image decoding: piping a HTTP response stream through a transform stream that decodes bytes into bitmap data,
+    and then through another transform that translates bitmaps into PNGs. If installed inside the <code>fetch</code>
+    hook of a service worker <a data-link-type="biblio" href="#biblio-service-workers">[SERVICE-WORKERS]</a>, this would allow developers to transparently polyfill new image
+    formats.
+</li></ul>
+
+
+   <p>The APIs described here provide unifying abstraction for all such streams, encouraging an ecosystem to grow around
+these shared and composable interfaces. At the same time, they have been carefully designed to map efficiently to
+low-level I/O concerns, and to encapsulate the trickier issues (such as <a data-link-type="dfn" href="#backpressure">backpressure</a>) that come along for the
+ride.</p>
+
+
+   <h2 class="heading settled" data-level="2" id="model"><span class="secno">2. </span><span class="content">Model</span><a class="self-link" href="#model"></a></h2>
+
+
+   <p>A <dfn data-dfn-type="dfn" data-noexport="" id="chunk">chunk<a class="self-link" href="#chunk"></a></dfn> is a single piece of data that is written to or read from a stream. It can be of any type; streams
+can even contain chunks of different types. A chunk will often not be the most atomic unit of data for a given stream;
+for example a binary stream might contain chunks consisting of 16 KiB <code>ArrayBuffer</code>s, instead of single
+bytes.</p>
+
+
+   <h3 class="heading settled" data-level="2.1" id="rs-model"><span class="secno">2.1. </span><span class="content">Readable Streams</span><a class="self-link" href="#rs-model"></a></h3>
+
+
+   <p>A <dfn data-dfn-type="dfn" data-noexport="" id="readable-stream">readable stream<a class="self-link" href="#readable-stream"></a></dfn> represents a source of data, from which you can read. In other words, data comes
+<em>out</em> of a readable stream.</p>
+
+
+   <p>Although a readable stream can be created with arbitrary behavior, most readable streams wrap a lower-level I/O source,
+called the <dfn data-dfn-type="dfn" data-noexport="" id="underlying-source">underlying source<a class="self-link" href="#underlying-source"></a></dfn>. There are two types of underlying source: push sources and pull sources.</p>
+
+
+   <p><dfn data-dfn-type="dfn" data-lt="push source" data-noexport="" id="push-source">Push sources<a class="self-link" href="#push-source"></a></dfn> push data at you, whether or not you are listening for it. They may also
+provide a mechanism for pausing and resuming the flow of data. An example push source is a TCP socket, where data is
+constantly being pushed from the OS level, at a rate that can be controlled by changing the TCP window size.</p>
+
+
+   <p><dfn data-dfn-type="dfn" data-lt="pull source" data-noexport="" id="pull-source">Pull sources<a class="self-link" href="#pull-source"></a></dfn> require you to request data from them. The data may be available
+synchronously, e.g. if it is held by the operating system’s in-memory buffers, or asynchronously, e.g. if it has to be
+read from disk. An example pull source is a file handle, where you seek to specific locations and read specific amounts.</p>
+
+
+   <p>Readable streams are designed to wrap both types of sources behind a single, unified interface.</p>
+
+
+   <p><a data-link-type="dfn" href="#chunk">Chunks</a> are enqueued into the stream by the stream’s <a data-link-type="dfn" href="#underlying-source">underlying source</a>. They can then be read one at a
+time via the stream’s public interface.</p>
+
+
+   <p>Code that reads from a readable stream using its public interface is known as a <dfn data-dfn-type="dfn" data-noexport="" id="consumer">consumer<a class="self-link" href="#consumer"></a></dfn>.</p>
+
+
+   <p>Consumers also have the ability to <dfn data-dfn-type="dfn" data-lt="cancel a readable stream" data-noexport="" id="cancel-a-readable-stream">cancel<a class="self-link" href="#cancel-a-readable-stream"></a></dfn> a readable stream. This indicates
+that the consumer has lost interest in the stream, and will immediately close the stream, throw away any queued
+<a data-link-type="dfn" href="#chunk">chunks</a>, and execute any cancellation mechanism of the <a data-link-type="dfn" href="#underlying-source">underlying source</a>.</p>
+
+
+   <h3 class="heading settled" data-level="2.2" id="ws-model"><span class="secno">2.2. </span><span class="content">Writable Streams</span><a class="self-link" href="#ws-model"></a></h3>
+
+
+   <p>A <dfn data-dfn-type="dfn" data-noexport="" id="writable-stream">writable stream<a class="self-link" href="#writable-stream"></a></dfn> represents a destination for data, into which you can write. In other words, data goes
+<em>in</em> to a writable stream.</p>
+
+
+   <p>Analogously to readable streams, most writable streams wrap a lower-level I/O sink, called the
+<dfn data-dfn-type="dfn" data-noexport="" id="underlying-sink">underlying sink<a class="self-link" href="#underlying-sink"></a></dfn>. Writable streams work to abstract away some of the complexity of the underlying sink, by
+queuing subsequent writes and only delivering them to the underlying sink one by one.</p>
+
+
+   <p><a data-link-type="dfn" href="#chunk">Chunks</a> are written to the stream via its public interface, and are passed one at a time to the stream’s
+<a data-link-type="dfn" href="#underlying-sink">underlying sink</a>.</p>
+
+
+   <p>Code that writes into a writable stream using its public interface is known as a <dfn data-dfn-type="dfn" data-noexport="" id="producer">producer<a class="self-link" href="#producer"></a></dfn>.</p>
+
+
+   <p>Producers also have the ability to <dfn data-dfn-type="dfn" data-lt="abort a writable stream" data-noexport="" id="abort-a-writable-stream">abort<a class="self-link" href="#abort-a-writable-stream"></a></dfn> a writable stream. This indicates that
+the producer believes something has gone wrong, and that future writes should be discontinued. It puts the stream in an
+errored state, even without a signal from the <a data-link-type="dfn" href="#underlying-sink">underlying sink</a>.</p>
+
+
+   <h3 class="heading settled" data-level="2.3" id="ts-model"><span class="secno">2.3. </span><span class="content">Transform Streams</span><a class="self-link" href="#ts-model"></a></h3>
+
+
+   <p>A <dfn data-dfn-type="dfn" data-noexport="" id="transform-stream">transform stream<a class="self-link" href="#transform-stream"></a></dfn> consists of a pair of streams: a writable stream, and a readable stream.
+In a manner specific to the transform stream in question, writes to the writable side result in new data being made
+available for reading from the readable side.</p>
+
+
+   <p>Some examples of transform streams include:</p>
+
+
+   <ul>
+  
+    <li>A GZIP compressor, to which uncompressed bytes are written and from which compressed bytes are read;
+  
+    </li><li>A video decoder, to which encoded bytes are writen and from which uncompressed video frames are read;
+  
+    </li><li>A text decoder, to which bytes are written and from which strings are read;
+  
+    </li><li>A CSV-to-JSON converter, to which strings representing lines of a CSV file are written and from which
+    corresponding JavaScript objects are read.
+</li></ul>
+
+
+   <h3 class="heading settled" data-level="2.4" id="pipe-chains"><span class="secno">2.4. </span><span class="content">Pipe Chains and Backpressure</span><a class="self-link" href="#pipe-chains"></a></h3>
+
+
+   <p>Streams are primarily used by <dfn data-dfn-type="dfn" data-noexport="" id="piping">piping<a class="self-link" href="#piping"></a></dfn> them to each other. A readable stream can be piped directly to a
+writable stream, or it can be piped through one or more transform streams first.</p>
+
+
+   <p>A set of streams piped together in this way is referred to as a <dfn data-dfn-type="dfn" data-noexport="" id="pipe-chain">pipe chain<a class="self-link" href="#pipe-chain"></a></dfn>. In a pipe chain, the
+<dfn data-dfn-type="dfn" data-noexport="" id="original-source">original source<a class="self-link" href="#original-source"></a></dfn> is the <a data-link-type="dfn" href="#underlying-source">underlying source</a> of the first readable stream in the chain; the
+<dfn data-dfn-type="dfn" data-noexport="" id="ultimate-sink">ultimate sink<a class="self-link" href="#ultimate-sink"></a></dfn> is the <a data-link-type="dfn" href="#underlying-sink">underlying sink</a> of the final writable stream in the chain.</p>
+
+
+   <p>Once a pipe chain is constructed, it can be used to propagate signals regarding how fast <a data-link-type="dfn" href="#chunk">chunks</a> should flow
+through it. If any step in the chain cannot yet accept chunks, it propagates a signal backwards through the pipe chain,
+until eventually the original source is told to stop producing chunks so fast. This process of normalizing flow from
+the original source according to how fast the chain can process chunks is called <dfn data-dfn-type="dfn" data-noexport="" id="backpressure">backpressure<a class="self-link" href="#backpressure"></a></dfn>.</p>
+
+
+
+
+   <h3 class="heading settled" data-level="2.5" id="queuing-strategies"><span class="secno">2.5. </span><span class="content">Internal Queues and Queuing Strategies</span><a class="self-link" href="#queuing-strategies"></a></h3>
+
+
+   <p>Both readable and writable streams maintain <dfn data-dfn-type="dfn" data-noexport="" id="internal-queues">internal queues<a class="self-link" href="#internal-queues"></a></dfn>, which they use for similar purposes. In the
+case of a readable stream, the internal queue contains <a data-link-type="dfn" href="#chunk">chunks</a> that have been enqueued by the <a data-link-type="dfn" href="#underlying-source">underlying
+source</a>, but not yet read by the consumer. In the case of a writable stream, the internal queue contains
+<a data-link-type="dfn" href="#chunk">chunks</a> which have been written to the stream by the producer, but not yet processed and acknowledged by the
+<a data-link-type="dfn" href="#underlying-sink">underlying sink</a>.</p>
+
+
+   <p>A <dfn data-dfn-type="dfn" data-noexport="" id="queuing-strategy">queuing strategy<a class="self-link" href="#queuing-strategy"></a></dfn> is a pair of methods that help determine whether a stream should apply
+<a data-link-type="dfn" href="#backpressure">backpressure</a> based on the state of its <a data-link-type="dfn" href="#internal-queues">internal queue</a>. The queuing strategy assigns a size to each
+<a data-link-type="dfn" href="#chunk">chunk</a>; later, the stream implementation asks the queuing strategy whether the stream should apply backpressure,
+based the total size of all chunks in the stream’s internal queue.</p>
+
+
+   <div class="example">
+  A simple example of a queuing strategy would be one that assigns a size of one to each chunk, and applies
+  backpressure whenever three or more chunks are in the internal queue. This would mean that up to three chunks could
+  be enqueued in a readable stream, or three chunks could be written to a writable stream, before they send a
+  backpressure signal.
+</div>
+
+
+   <p>A queuing strategy is generally associated with a specific type of <a data-link-type="dfn" href="#underlying-source">underlying source</a> or <a data-link-type="dfn" href="#underlying-sink">underlying sink</a>.</p>
+
+
+   <h3 class="heading settled" data-level="2.6" id="locking"><span class="secno">2.6. </span><span class="content">Locking</span><a class="self-link" href="#locking"></a></h3>
+
+
+
+
+   <p>A <dfn data-dfn-type="dfn" data-noexport="" id="readable-stream-reader">readable stream reader<a class="self-link" href="#readable-stream-reader"></a></dfn> or simply reader is an object that allows direct reading of <a data-link-type="dfn" href="#chunk">chunks</a> from
+a <a data-link-type="dfn" href="#readable-stream">readable stream</a>. Without a reader, a <a data-link-type="dfn" href="#consumer">consumer</a> can only perform high-level operations on the readable
+stream: waiting for the stream to become closed or errored, <a data-link-type="dfn" href="#cancel-a-readable-stream">canceling</a> the stream,
+or <a data-link-type="dfn" href="#piping">piping</a> the readable stream to a writable stream. Many of those high-level operations actually use a reader
+themselves.</p>
+
+
+   <p>A given readable stream only has at most one reader at a time. We say in this case the stream is
+<dfn data-dfn-type="dfn" data-lt="locked to a reader" data-noexport="" id="locked-to-a-reader">locked to the reader<a class="self-link" href="#locked-to-a-reader"></a></dfn>, and that the reader is <dfn data-dfn-type="dfn" data-lt="active reader" data-noexport="" id="active-reader">active<a class="self-link" href="#active-reader"></a></dfn>.</p>
+
+
+   <p>A reader also has the capability to <dfn data-dfn-type="dfn" data-lt="release a read lock" data-noexport="" id="release-a-read-lock">release its read lock<a class="self-link" href="#release-a-read-lock"></a></dfn>, which makes it no
+longer active. At this point another reader can be acquired at will. If the stream becomes closed or errored as a
+result of the behavior of its <a data-link-type="dfn" href="#underlying-source">underlying source</a> or via <a data-link-type="dfn" href="#cancel-a-readable-stream">cancellation</a>, its
+reader (if one exists) will automatically release its lock.</p>
+
+
+   <h2 class="heading settled" data-level="3" id="rs"><span class="secno">3. </span><span class="content">Readable Streams</span><a class="self-link" href="#rs"></a></h2>
+
+
+   <h3 class="heading settled" data-level="3.1" id="rs-intro"><span class="secno">3.1. </span><span class="content">Using Readable Streams</span><a class="self-link" href="#rs-intro"></a></h3>
+
+
+   <div class="example">
+  The simplest way to consume a readable stream is to simply <a data-link-type="dfn" href="#piping">pipe</a> it to a <a data-link-type="dfn" href="#writable-stream">writable stream</a>.
+  This ensures that <a data-link-type="dfn" href="#backpressure">backpressure</a> is respected, and any errors (either writing or reading) are propagated through
+  the chain:
+
+  
+    <pre><code class="lang-javascript">readableStream.pipeTo(writableStream)
+  .then(() =&gt; console.log("All data successfully written!"))
+  .catch(e =&gt; console.error("Something went wrong!", e));
+</code></pre>
+</div>
+
+
+   <div class="example">
+  Although readable streams will usually be used by piping them to a writable stream, you can also read them directly
+  by acquiring a <a data-link-type="dfn" href="#readable-stream-reader">reader</a> and using its <code>read()</code> method to get successive
+  chunks. For example, this code logs the next <a data-link-type="dfn" href="#chunk">chunk</a> in the stream, if available:
+
+  
+    <pre><code class="lang-javascript">const reader = readableStream.getReader();
+
+reader.read().then(
+  ({ value, done }) =&gt; {
+    if (done) {
+      console.log("The stream was already closed!");
+    } else {
+      console.log(value);
+    }
+  },
+  e =&gt; console.error("The stream became errored and cannot be read from!", e)
+);
+</code></pre>
+</div>
+
+
+   <h3 class="heading settled" data-level="3.2" id="rs-class"><span class="secno">3.2. </span><span class="content">Class <code>ReadableStream</code></span><a class="self-link" href="#rs-class"></a></h3>
+
+
+   <p>The <code>ReadableStream</code> class is a concrete instance of the general <a data-link-type="dfn" href="#readable-stream">readable stream</a> concept. It is
+adaptable to any <a data-link-type="dfn" href="#chunk">chunk</a> type, and maintains an internal queue to keep track of data supplied by the <a data-link-type="dfn" href="#underlying-source">underlying
+source</a> but not yet read by any consumer.</p>
+
+
+   <h4 class="heading settled" data-level="3.2.1" id="rs-class-definition"><span class="secno">3.2.1. </span><span class="content">Class Definition</span><a class="self-link" href="#rs-class-definition"></a></h4>
+
+
+   <p><em>This section is non-normative.</em></p>
+
+
+   <p>If one were to write the <code>ReadableStream</code> class in something close to the syntax of <a data-link-type="biblio" href="#biblio-ecmascript">[ECMASCRIPT]</a>, it
+would look like</p>
+
+
+   <pre><code class="lang-javascript">class ReadableStream {
+  constructor(underlyingSource = {})
+
+  cancel(reason)
+  getReader()
+  pipeThrough({ writable, readable }, options)
+  pipeTo(dest, { preventClose, preventAbort, preventCancel } = {})
+}
+</code></pre>
+
+
+   <h4 class="heading settled" data-level="3.2.2" id="rs-internal-slots"><span class="secno">3.2.2. </span><span class="content">Internal Slots</span><a class="self-link" href="#rs-internal-slots"></a></h4>
+
+
+   <p>Instances of <code>ReadableStream</code> are created with the internal slots described in the following table:</p>
+
+
+   <table>
+  
+    <thead>
+    
+     <tr>
+      
+      <th>Internal Slot
+      
+      
+      </th><th>Description (<em>non-normative</em>)
+      
+    
+     
+  
+  
+    </th></tr></thead><tbody>
+     <tr>
+    
+      <td>[[close]]
+    
+      </td><td>A <a data-link-type="dfn" href="#readable-stream-close-function">Readable Stream Close Function</a> created with the ability to close this stream
+  
+     
+  
+     </td></tr><tr>
+    
+      <td>[[closedPromise]]
+    
+      </td><td>A promise that becomes fulfilled when the stream becomes closed; returned by the <code>closed</code> getter
+  
+     
+  
+     </td></tr><tr>
+    
+      <td>[[draining]]
+    
+      </td><td>A boolean flag indicating whether the stream has been closed, but still has chunks in its internal queue that
+      have not yet been read
+  
+     
+  
+     </td></tr><tr>
+    
+      <td>[[enqueue]]
+    
+      </td><td>A <a data-link-type="dfn" href="#readable-stream-enqueue-function">Readable Stream Enqueue Function</a> created with the ability to enqueue a passed <a data-link-type="dfn" href="#chunk">chunk</a> in this
+      stream
+  
+     
+  
+     </td></tr><tr>
+    
+      <td>[[error]]
+    
+      </td><td>A <a data-link-type="dfn" href="#readable-stream-error-function">Readable Stream Error Function</a> created with the ability to move this stream to an
+      <code>"errored"</code> state
+  
+     
+  
+     </td></tr><tr>
+    
+      <td>[[pullScheduled]]
+    
+      </td><td>A boolean flag set to <b>true</b> when the underlying source’s <code>pull</code> method is scheduled to be
+      called again after the current call to it finishes
+  
+     
+  
+     </td></tr><tr>
+    
+      <td>[[pullingPromise]]
+    
+      </td><td>A promise returned by the <a data-link-type="dfn" href="#underlying-source">underlying source</a>’s <code>pull</code> method, stored so that the stream can
+      re-pull when it fulfills
+  
+     
+  
+     </td></tr><tr>
+    
+      <td>[[queue]]
+    
+      </td><td>A List representing the stream’s internal queue of <a data-link-type="dfn" href="#chunk">chunks</a>
+  
+     
+  
+     </td></tr><tr>
+    
+      <td>[[reader]]
+    
+      </td><td>A <code>ReadableStreamReader</code> instance, if the stream is <a data-link-type="dfn" href="#locked-to-a-reader">locked to a reader</a>, or <b>undefined</b>
+      if it is not
+  
+     
+  
+     </td></tr><tr>
+    
+      <td>[[started]]
+    
+      </td><td>A boolean flag indicating whether the <a data-link-type="dfn" href="#underlying-source">underlying source</a> has finished starting
+  
+     
+  
+     </td></tr><tr>
+    
+      <td>[[state]]
+    
+      </td><td>A string containing the stream’s current state, used internally; one of <code>"readable"</code>,
+      <code>"closed"</code>, or <code>"errored"</code>.
+  
+     
+  
+     </td></tr><tr>
+    
+      <td>[[storedError]]
+    
+      </td><td>A value indicating how the stream failed, to be given as a failure reason or exception when trying to operate
+      on an errored stream
+  
+     
+  
+     </td></tr><tr>
+    
+      <td>[[underlyingSource]]
+    
+      </td><td>An object representation of the stream’s <a data-link-type="dfn" href="#underlying-source">underlying source</a>, including its <a data-link-type="dfn" href="#queuing-strategy">queuing strategy</a>; also
+      used for the <a href="#is-readable-stream">IsReadableStream</a> brand check
+  
+     
+</td></tr></tbody></table>
+
+
+   <h4 class="heading settled" data-level="3.2.3" id="rs-constructor"><span class="secno">3.2.3. </span><span class="content">new ReadableStream(underlyingSource = {})</span><a class="self-link" href="#rs-constructor"></a></h4>
+
+
+   <div class="note" role="note">
+  The <var>underlyingSource</var> object passed to the constructor can implement any of the following methods to
+  govern how the constructed stream instance behaves:
+
+  
+    <ul>
+    
+     <li> <code>start(enqueue, close, error)</code> is called immediately, and is typically used to adapt a <a data-link-type="dfn" href="#push-source">push
+      source</a> by setting up relevant event listeners, or to acquire access to a <a data-link-type="dfn" href="#pull-source">pull source</a>. If this process
+      is asynchronous, it can return a promise to signal success or failure.
+    
+     </li><li> <code>pull(enqueue, close)</code> is called when the stream’s internal queue of chunks is depleted, and the
+      consumer has signaled that they wish to consume more data. If <code>pull</code> returns a promise, then
+      <code>pull</code> will not be called again until that promise fulfills; if the promise rejects, the stream will
+      become errored.
+    
+     </li><li> <code>cancel(reason)</code> is called when the consumer signals that they are no longer interested in the
+      stream. It should perform any actions necessary to release access to the <a data-link-type="dfn" href="#underlying-source">underlying source</a>. If this
+      process is asynchronous, it can return a promise to signal success or failure.
+  
+    </li></ul>
+
+
+    <p>Both <code>start</code> and <code>pull</code> are given the ability to manipulate the stream’s internal queue and
+  state via the passed <code>enqueue</code>, <code>close</code>, and <code>error</code> callbacks. This is an example
+  of the <a href="https://blog.domenic.me/the-revealing-constructor-pattern/">revealing constructor pattern</a>.</p>
+
+
+    <p>The underlying source can also have a <code>strategy</code> property containing a <a data-link-type="dfn" href="#queuing-strategy">queuing strategy</a> object with
+  two methods <code>shouldApplyBackpressure(queueSize)</code> and <code>size(chunk)</code>. These could be instances of
+  the built-in <code>CountQueuingStrategy</code> or <code>ByteLengthQueuingStrategy</code> classes, or custom strategy
+  objects. If no strategy is supplied, the default behavior will be to apply backpressure (via the return value of
+  <code>enqueue</code>) when enqueuing into a non-empty queue.</p>
+</div>
+
+
+   <emu-alg><ol>
+  <li>Set <emu-val>this</emu-val>@[[underlyingSource]] to <var>underlyingSource</var>.</li>
+  <li>Set <emu-val>this</emu-val>@[[queue]] to a new empty List.</li>
+  <li>Set <emu-val>this</emu-val>@[[state]] to <code>"readable"</code>.</li>
+  <li>Set <emu-val>this</emu-val>@[[started]], <emu-val>this</emu-val>@[[draining]], and <emu-val>this</emu-val>@[[pullScheduled]] to <emu-val>false</emu-val>.</li>
+  <li>Set <emu-val>this</emu-val>@[[reader]], <emu-val>this</emu-val>@[[pullingPromise]], and <emu-val>this</emu-val>@[[storedError]] to <emu-val>undefined</emu-val>.</li>
+  <li>Set <emu-val>this</emu-val>@[[enqueue]] to CreateReadableStreamEnqueueFunction(<emu-val>this</emu-val>).</li>
+  <li>Set <emu-val>this</emu-val>@[[close]] to CreateReadableStreamCloseFunction(<emu-val>this</emu-val>).</li>
+  <li>Set <emu-val>this</emu-val>@[[error]] to CreateReadableStreamErrorFunction(<emu-val>this</emu-val>).</li>
+  <li>Let <var>startResult</var> be InvokeOrNoop(<var>underlyingSource</var>, <code>"start"</code>, «<emu-val>this</emu-val>@[[enqueue]], <emu-val>this</emu-val>@[[close]], <emu-val>this</emu-val>@[[error]]»).</li>
+  <li><a href="https://people.mozilla.org/~jorendorff/es6-draft.html#sec-returnifabrupt">ReturnIfAbrupt</a>(startResult).</li>
+  <li>Resolve <var>startResult</var> as a promise:
+    <ol>
+      <li>Upon fulfillment,
+        <ol>
+          <li>Set <emu-val>this</emu-val>@[[started]] to <emu-val>true</emu-val>.</li>
+          <li>Return CallReadableStreamPull(<emu-val>this</emu-val>).</li>
+        </ol>
+      </li>
+      <li>Upon rejection with reason <var>r</var>, call-with-rethrow <a href="https://people.mozilla.org/~jorendorff/es6-draft.html#sec-call-f-v-args">Call</a>(<emu-val>this</emu-val>@[[error]], <emu-val>undefined</emu-val>, «‍<var>r</var>»).</li>
+    </ol>
+  </li>
+</ol></emu-alg>
+
+
+   <ol>
+  
+    <li> Set <b>this</b>@[[underlyingSource]] to <var>underlyingSource</var>.
+  
+    </li><li> Set <b>this</b>@[[queue]] to a new empty List.
+  
+    </li><li> Set <b>this</b>@[[state]] to <code>"readable"</code>.
+  
+    </li><li> Set <b>this</b>@[[started]], <b>this</b>@[[draining]], and <b>this</b>@[[pullScheduled]] to <b>false</b>.
+  
+    </li><li> Set <b>this</b>@[[reader]], <b>this</b>@[[pullingPromise]], and <b>this</b>@[[storedError]] to
+    <b>undefined</b>.
+  
+    </li><li> Set <b>this</b>@[[enqueue]] to CreateReadableStreamEnqueueFunction(<b>this</b>).
+  
+    </li><li> Set <b>this</b>@[[close]] to CreateReadableStreamCloseFunction(<b>this</b>).
+  
+    </li><li> Set <b>this</b>@[[error]] to CreateReadableStreamErrorFunction(<b>this</b>).
+  
+    </li><li> Let <var>startResult</var> be InvokeOrNoop(<var>underlyingSource</var>, <code>"start"</code>,
+    «‍<b>this</b>@[[enqueue]], <b>this</b>@[[close]], <b>this</b>@[[error]]»).
+  
+    </li><li> ReturnIfAbrupt(<var>startResult</var>).
+  
+    </li><li> Resolve <var>startResult</var> as a promise:
+    
+     <ol>
+      
+      <li> Upon fulfillment,
+        
+       <ol>
+          
+        <li> Set <b>this</b>@[[started]] to <b>true</b>.
+          
+        </li><li> Return CallReadableStreamPull(<b>this</b>).
+        
+       </li></ol>
+       
+      
+      </li><li> Upon rejection with reason <var>r</var>, call-with-rethrow Call(<b>this</b>@[[error]], <b>undefined</b>,
+        «‍<var>r</var>»).
+    
+     </li></ol>
+     
+</li></ol>
+
+
+   <h4 class="heading settled" data-level="3.2.4" id="rs-prototype"><span class="secno">3.2.4. </span><span class="content">Properties of the <code>ReadableStream</code> Prototype</span><a class="self-link" href="#rs-prototype"></a></h4>
+
+
+   <h5 class="heading settled" data-level="3.2.4.1" id="rs-cancel"><span class="secno">3.2.4.1. </span><span class="content">cancel(reason)</span><a class="self-link" href="#rs-cancel"></a></h5>
+
+
+   <div class="note" role="note">
+  The <code>cancel</code> method <a data-link-type="dfn" href="#cancel-a-readable-stream">cancels</a> the stream, signaling a loss of interest
+  in the stream by a consumer. The supplied <var>reason</var> argument will be given to the underlying source, which
+  may or may not use it.
+</div>
+
+
+   <emu-alg><ol>
+  <li>If IsReadableStream(<emu-val>this</emu-val>) is <emu-val>false</emu-val>, return a promise rejected with a <emu-val>TypeError</emu-val> exception.</li>
+  <li>If IsReadableStreamLocked(<emu-val>this</emu-val>) is <emu-val>true</emu-val>, return a promise rejected with a <emu-val>TypeError</emu-val> exception.</li>
+  <li>Return CancelReadableStream(<emu-val>this</emu-val>, <var>reason</var>).</li>
+</ol></emu-alg>
+
+
+   <h5 class="heading settled" data-level="3.2.4.2" id="rs-get-reader"><span class="secno">3.2.4.2. </span><span class="content">getReader()</span><a class="self-link" href="#rs-get-reader"></a></h5>
+
+
+   <div class="note" role="note">
+  The <code>getReader</code> method creates an <a data-link-type="dfn" href="#readable-stream-reader">readable stream reader</a> and
+  <a data-link-type="dfn" href="#locked-to-a-reader">locks</a> the stream to the the new reader. While the stream is locked, no other reader
+  can be acquired until this one is <a data-link-type="dfn" href="#release-a-read-lock">released</a>. The returned reader provides the ability
+  to directly read individual <a data-link-type="dfn" href="#chunk">chunks</a> from the stream via the reader’s <code>read</code> method.
+
+
+    <p>This functionality is especially useful for creating abstractions that desire the ability to consume a stream in its
+  entirety. By getting a reader for the stream, you can ensure nobody else can interleave reads with yours or cancel
+  the stream, which would interfere with your abstraction.</p>
+
+
+    <p>Note that if a stream becomes closed or errored, any reader it is locked to is automatically released.</p>
+</div>
+
+
+   <ol>
+  
+    <li> If IsReadableStream(<b>this</b>) is <b>false</b>, throw a <b>TypeError</b> exception.
+  
+    </li><li> Return AcquireReadableStreamReader(<b>this</b>).
+</li></ol>
+
+
+   <div class="example">
+  An example of an abstraction that might benefit from using a reader is a function like the following, which is
+  designed to read an entire readable stream into memory as an array of <a data-link-type="dfn" href="#chunk">chunks</a>.
+
+  
+    <pre><code class="lang-javascript">function readAllChunks(readableStream) {
+  const reader = readableStream.getReader();
+  const chunks = [];
+
+  return pump();
+
+  function pump() {
+    return reader.read().then(({ value, done })=&gt; {
+      if (done) {
+        return chunks;
+      }
+
+      chunks.push(value);
+      return pump();
+    });
+  }
+}
+</code></pre>
+
+
+    <p>Note how the first thing it does is obtain a reader, and from then on it uses the reader exclusively. This ensures
+  that no other consumer can interfere with the stream, either by reading chunks or by
+  <a data-link-type="dfn" href="#cancel-a-readable-stream">canceling</a> the stream.</p>
+</div>
+
+
+   <h5 class="heading settled" data-level="3.2.4.3" id="rs-pipe-through"><span class="secno">3.2.4.3. </span><span class="content">pipeThrough({ writable, readable }, options)</span><a class="self-link" href="#rs-pipe-through"></a></h5>
+
+
+   <div class="note" role="note">
+  The <code>pipeThrough</code> method provides a convenient, chainable way of <a data-link-type="dfn" href="#piping">piping</a> this <a data-link-type="dfn" href="#readable-stream">readable stream</a>
+  through a <a data-link-type="dfn" href="#transform-stream">transform stream</a> (or any other <code>{ writable, readable }</code> pair). It simply pipes the stream
+  into the writable side of the supplied pair, and returns the readable side for further use.
+
+
+    <p>Piping a stream will generally <a data-link-type="dfn" href="#locked-to-a-reader">lock</a> it for the duration of the pipe, preventing any
+  other consumer from acquiring a reader.</p>
+
+
+    <p>This method is intentionally generic; it does not require that its <b>this</b> value be a <code>ReadableStream</code>
+  object. It also does not require that its <code>writable</code> argument be a <code>WritableStream</code> instance,
+  or that its <code>readable</code> argument be a <code>ReadableStream</code> instance.</p>
+</div>
+
+
+   <ol>
+  
+    <li> Call-with-rethrow Invoke(<b>this</b>, <code>"pipeTo"</code>, «‍<var>writable</var>, <var>options</var>»).
+  
+    </li><li> Return <var>readable</var>.
+</li></ol>
+
+
+   <div class="example">
+  A typical example of constructing <a data-link-type="dfn" href="#pipe-chain">pipe chain</a> using <code>pipeThrough</code> would look like
+
+  
+    <pre><code class="lang-javascript">httpResponseBody
+  .pipeThrough(decompressorTransform)
+  .pipeThrough(ignoreNonImageFilesTransform)
+  .pipeTo(mediaGallery);
+</code></pre>
+</div>
+
+
+   <h5 class="heading settled" data-level="3.2.4.4" id="rs-pipe-to"><span class="secno">3.2.4.4. </span><span class="content">pipeTo(dest, { preventClose, preventAbort, preventCancel } = {})</span><a class="self-link" href="#rs-pipe-to"></a></h5>
+
+
+   <div class="note" role="note">
+  The <code>pipeTo</code> method <a data-link-type="dfn" href="#piping">pipes</a> this <a data-link-type="dfn" href="#readable-stream">readable stream</a> to a given <a data-link-type="dfn" href="#writable-stream">writable
+  stream</a>. The way in which the piping process behaves under various error conditions can be customized with a
+  number of passed options. It returns a promise that fulfills when the piping process completes successfully, or
+  rejects if any errors were encountered.
+
+
+    <p>Piping a stream will generally <a data-link-type="dfn" href="#locked-to-a-reader">lock</a> it for the duration of the pipe, preventing any
+  other consumer from acquiring a reader.</p>
+
+
+    <p>This method is intentionally generic; it does not require that its <b>this</b> value be a <code>ReadableStream</code>
+  object.</p>
+</div>
+
+
+   <p>The <code>pipeTo</code> method is one of the more complex methods, and is undergoing some revision and edge-case
+bulletproofing before we write it up in prose.</p>
+
+
+   <p>For now, please consider the reference implementation normative:
+<a href="https://github.com/whatwg/streams/blob/master/reference-implementation/lib/readable-stream.js">reference-implementation/lib/readable-stream.js</a>,
+look for the <code>pipeTo</code> method.</p>
+
+
+   <h3 class="heading settled" data-level="3.3" id="reader-class"><span class="secno">3.3. </span><span class="content">Class <code>ReadableStreamReader</code></span><a class="self-link" href="#reader-class"></a></h3>
+
+
+   <p>The <code>ReadableStreamReader</code> class represents a <a data-link-type="dfn" href="#readable-stream-reader">readable stream reader</a> designed to be vended by a
+<code>ReadableStream</code> instance.</p>
+
+
+   <h4 class="heading settled" data-level="3.3.1" id="reader-class-definition"><span class="secno">3.3.1. </span><span class="content">Class Definition</span><a class="self-link" href="#reader-class-definition"></a></h4>
+
+
+   <p><em>This section is non-normative.</em></p>
+
+
+   <p>If one were to write the <code>ReadableStreamReader</code> class in something close to the syntax of <a data-link-type="biblio" href="#biblio-ecmascript">[ECMASCRIPT]</a>,
+it would look like</p>
+
+
+   <pre><code class="lang-javascript">class ReadableStreamReader {
+  constructor(stream)
+
+  get closed()
+
+  cancel(reason)
+  read()
+  releaseLock()
+}
+</code></pre>
+
+
+   <h4 class="heading settled" data-level="3.3.2" id="reader-internal-slots"><span class="secno">3.3.2. </span><span class="content">Internal Slots</span><a class="self-link" href="#reader-internal-slots"></a></h4>
+
+
+   <p>Instances of <code>ReadableStreamReader</code> are created with the internal slots described in the following table:</p>
+
+
+   <table>
+  
+    <thead>
+    
+     <tr>
+      
+      <th>Internal Slot
+      
+      
+      </th><th>Description (<em>non-normative</em>)
+      
+    
+     
+  
+  
+    </th></tr></thead><tbody>
+     <tr>
+    
+      <td>[[closedPromise]]
+    
+      </td><td>A promise returned by the reader’s <code>closed</code> getter
+  
+     
+  
+     </td></tr><tr>
+    
+      <td>[[ownerReadableStream]]
+    
+      </td><td>A <code>ReadableStream</code> instance that owns this reader; also used for the
+      <a href="#is-readable-stream-reader">IsReadableStreamReader</a> brand check
+  
+     
+  
+     </td></tr><tr>
+    
+      <td>[[readRequests]]
+    
+      </td><td>A List of promises returned by calls to the reader’s <code>read()</code> method that have not yet been resolved,
+      due to the <a data-link-type="dfn" href="#consumer">consumer</a> requesting <a data-link-type="dfn" href="#chunk">chunks</a> sooner than they are available
+  
+     
+  
+     </td></tr><tr>
+    
+      <td>[[state]]
+    
+      </td><td>A string containing the reader’s current state, used internally; one of <code>"readable"</code>,
+      <code>"closed"</code>, or <code>"errored"</code>
+  
+     
+  
+     </td></tr><tr>
+    
+      <td>[[storedError]]
+    
+      </td><td>A value indicating how the reader’s stream failed, to be given as a failure reason or exception when trying to
+      operate on the reader; applicable only when [[state]] is <code>"errored"</code>
+  
+     
+</td></tr></tbody></table>
+
+
+   <h4 class="heading settled" data-level="3.3.3" id="reader-constructor"><span class="secno">3.3.3. </span><span class="content">new ReadableStreamReader(stream)</span><a class="self-link" href="#reader-constructor"></a></h4>
+
+
+   <div class="note" role="note">
+  The <code>ReadableStreamReader</code> constructor is generally not meant to be used directly; instead, a stream’s
+  <code>getReader()</code> method should be used. This allows different classes of readable streams to vend different
+  classes of readers without the <a data-link-type="dfn" href="#consumer">consumer</a> needing to know which goes with which.
+</div>
+
+
+   <ol>
+  
+    <li> If IsReadableStream(<var>stream</var>) is <b>false</b>, throw a <b>TypeError</b> exception.
+  
+    </li><li> If IsReadableStreamLocked(<var>stream</var>) is <b>true</b>, throw a <b>TypeError</b> exception.
+  
+    </li><li> Set <var>stream</var>@[[reader]] to <b>this</b>.
+  
+    </li><li> Set <b>this</b>@[[ownerReadableStream]] to <var>stream</var>.
+  
+    </li><li> Set <b>this</b>@[[state]] to <code>"readable"</code>.
+  
+    </li><li> Set <b>this</b>@[[storedError]] to <b>undefined</b>.
+  
+    </li><li> Set <b>this</b>@[[readRequests]] to a new empty List.
+  
+    </li><li> Set <b>this</b>@[[closedPromise]] to a new promise.
+  
+    </li><li> If <var>stream</var>@[[state]] is <code>"closed"</code> or <code>"errored"</code>, call-with-rethrow
+    ReleaseReadableStreamReader(<b>this</b>).
+</li></ol>
+
+
+   <h4 class="heading settled" data-level="3.3.4" id="reader-prototype"><span class="secno">3.3.4. </span><span class="content">Properties of the <code>ReadableStreamReader</code> Prototype</span><a class="self-link" href="#reader-prototype"></a></h4>
+
+
+   <h5 class="heading settled" data-level="3.3.4.1" id="reader-closed"><span class="secno">3.3.4.1. </span><span class="content">get closed</span><a class="self-link" href="#reader-closed"></a></h5>
+
+
+   <div class="note" role="note">
+  The <code>closed</code> getter returns a promise that will be fulfilled when the stream becomes closed or the
+  reader’s lock is <a data-link-type="dfn" href="#release-a-read-lock">released</a>, or rejected if the stream ever errors.
+</div>
+
+
+   <ol>
+  
+    <li> If IsReadableStreamReader(<b>this</b>) is <b>false</b>, return a promise rejected with a <b>TypeError</b>
+    exception.
+  
+    </li><li> Return <b>this</b>@[[closedPromise]].
+</li></ol>
+
+
+   <h5 class="heading settled" data-level="3.3.4.2" id="reader-cancel"><span class="secno">3.3.4.2. </span><span class="content">cancel(reason)</span><a class="self-link" href="#reader-cancel"></a></h5>
+
+
+   <div class="note" role="note">
+  If the reader is <a data-link-type="dfn" href="#active-reader">active</a>, the <code>cancel</code> method behaves the same as that for the
+  associated stream. When done, it automatically <a data-link-type="dfn" href="#release-a-read-lock">releases the lock</a>.
+</div>
+
+
+   <ol>
+  
+    <li> If IsReadableStreamReader(<b>this</b>) is <b>false</b>, return a promise rejected with a <b>TypeError</b>
+    exception.
+  
+    </li><li> If <b>this</b>@[[ownerReadableStream]] is <b>undefined</b>, return a new promise resolved with
+    <b>undefined</b>.
+  
+    </li><li> Return CancelReadableStream(<b>this</b>@[[ownerReadableStream]], <var>reason</var>).
+</li></ol>
+
+
+   <h5 class="heading settled" data-level="3.3.4.3" id="reader-read"><span class="secno">3.3.4.3. </span><span class="content">read()</span><a class="self-link" href="#reader-read"></a></h5>
+
+
+
+   <div class="note" role="note">
+  The <code>read</code> method will return a promise that allows access to the next <a data-link-type="dfn" href="#chunk">chunk</a> from the stream’s
+  internal queue, if available.
+
+  
+    <ul>
+    
+     <li> If the chunk does become available, the promise will be fulfilled with an object of the form
+      <code>{ value: theChunk, done: false }</code>.
+    
+     </li><li> If the stream becomes closed, the promise will be fulfilled with an object of the form
+      <code>{ value: undefined, done: true }</code>.
+    
+     </li><li> If the stream becomes errored, the promise will be rejected with the relevant error.
+  
+    </li></ul>
+
+
+    <p>If reading a chunk causes the queue to become empty, more data will be pulled from the <a data-link-type="dfn" href="#underlying-source">underlying source</a>.</p>
+</div>
+
+
+   <ol>
+  
+    <li> If IsReadableStreamReader(<b>this</b>) is <b>false</b>, throw a <b>TypeError</b> exception.
+  
+    </li><li> If <b>this</b>@[[state]] is <code>"closed"</code>, return a new promise resolved with
+    CreateIterResultObject(<b>undefined</b>, <b>true</b>).
+  
+    </li><li> If <b>this</b>@[[state]] is <code>"errored"</code>, return a new promise rejected with
+    <b>this</b>@[[storedError]].
+  
+    </li><li> Assert: <b>this</b>@[[ownerReadableStream]] is not <b>undefined</b>.
+  
+    </li><li> Assert: <b>this</b>@[[ownerReadableStream]]@[[state]] is <code>"readable"</code>.
+  
+    </li><li> If <b>this</b>@[[ownerReadableStream]]@[[queue]] is not empty,
+    
+     <ol>
+      
+      <li> Let <var>chunk</var> be DequeueValue(<b>this</b>@[[ownerReadableStream]]@[[queue]]).
+      
+      </li><li> If <b>this</b>@[[ownerReadableStream]]@[[draining]] is <b>true</b> and
+        <b>this</b>@[[ownerReadableStream]]@[[queue]] is now empty, call-with-rethrow
+        CloseReadableStream(<b>this</b>@[[ownerReadableStream]]).
+      
+      </li><li> Otherwise, call-with-rethrow CallReadableStreamPull(<b>this</b>@[[ownerReadableStream]]).
+      
+      </li><li> Return a new promise resolved with CreateIterResultObject(<var>chunk</var>, <b>false</b>).
+    
+     </li></ol>
+     
+  
+    </li><li> Otherwise,
+    
+     <ol>
+      
+      <li> Let <var>readRequestPromise</var> be a new promise.
+      
+      </li><li> Append <var>readRequestPromise</var> as the last element of <b>this</b>@[[readRequests]].
+      
+      </li><li> Return <var>readRequestPromise</var>.
+    
+     </li></ol>
+     
+</li></ol>
+
+
+   <h5 class="heading settled" data-level="3.3.4.4" id="reader-release-lock"><span class="secno">3.3.4.4. </span><span class="content">releaseLock()</span><a class="self-link" href="#reader-release-lock"></a></h5>
+
+
+   <div class="note" role="note">
+  The <code>releaseLock</code> method <a data-link-type="dfn" href="#release-a-read-lock">releases the reader’s lock</a> on the corresponding
+  stream. After the lock is released, the reader is no longer <a data-link-type="dfn" href="#active-reader">active</a>. If the associated
+  stream is errored when the lock is released, the reader will appear errored in the same way from now on; otherwise,
+  the reader will appear closed.
+
+
+    <p>A reader’s lock cannot be released while it still has a pending read request, i.e., if a promise returned by the
+  reader’s <code>read()</code> method has not yet been settled. Attempting to do so will throw a <b>TypeError</b>
+  and leave the reader locked to the stream.</p>
+</div>
+
+
+   <ol>
+  
+    <li> If IsReadableStreamReader(<b>this</b>) is <b>false</b>, throw a <b>TypeError</b> exception.
+  
+    </li><li> If <b>this</b>@[[ownerReadableStream]] is <b>undefined</b>, return <b>undefined</b>.
+  
+    </li><li> If <b>this</b>@[[readRequests]] is not empty, throw a <b>TypeError</b> exception.
+  
+    </li><li> Return ReleaseReadableStreamReader(<b>this</b>).
+</li></ol>
+
+
+   <h3 class="heading settled" data-level="3.4" id="rs-abstract-ops"><span class="secno">3.4. </span><span class="content">Readable Stream Abstract Operations</span><a class="self-link" href="#rs-abstract-ops"></a></h3>
+
+
+   <h4 class="heading settled" data-level="3.4.1" id="acquire-readable-stream-reader"><span class="secno">3.4.1. </span><span class="content">AcquireReadableStreamReader ( stream )</span><a class="self-link" href="#acquire-readable-stream-reader"></a></h4>
+
+
+   <div class="note" role="note">
+  This abstract operation is meant to be called from other specifications that may wish to acquire an
+  <a data-link-type="dfn" href="#readable-stream-reader">readable stream reader</a> for a given stream. Within this specification, it is only used once, in the definition
+  of <a href="#rs-get-reader"><code>ReadableStream.prototype.getReader</code></a>.
+</div>
+
+
+   <ol>
+  
+    <li> Return Construct(<code>ReadableStreamReader</code>, «‍<var>stream</var>»).
+</li></ol>
+
+
+   <h4 class="heading settled" data-level="3.4.2" id="call-readable-stream-pull"><span class="secno">3.4.2. </span><span class="content">CallReadableStreamPull ( stream )</span><a class="self-link" href="#call-readable-stream-pull"></a></h4>
+
+
+   <ol>
+  
+    <li> If <var>stream</var>@[[draining]] is <b>true</b> or <var>stream</var>@[[started]] is <b>false</b> or
+    <var>stream</var>@[[state]] is <code>"closed"</code> or <var>stream</var>@[[state]] is <code>"errored"</code> or
+    <var>stream</var>@[[pullScheduled]] is <b>true</b>, return <b>undefined</b>.
+  
+    </li><li> If <var>stream</var>@[[pullingPromise]] is not <b>undefined</b>,
+    
+     <ol>
+      
+      <li> Set <var>stream</var>@[[pullScheduled]] to <b>true</b>.
+      
+      </li><li> Upon fulfillment of <var>stream</var>@[[pullingPromise]],
+        
+       <ol>
+          
+        <li> Set <var>stream</var>@[[pullScheduled]] to <b>false</b>.
+          
+        </li><li> Call-with-rethrow CallReadableStreamPull(<var>stream</var>).
+        
+       </li></ol>
+       
+      
+      </li><li> Return <b>undefined</b>.
+    
+     </li></ol>
+     
+  
+    </li><li> Let <var>shouldApplyBackpressure</var> be ShouldReadableStreamApplyBackpressure(<var>stream</var>).
+  
+    </li><li> If <var>shouldApplyBackpressure</var> is <b>true</b>, return <b>undefined</b>.
+  
+    </li><li> Set <var>stream</var>@[[pullingPromise]] to PromiseInvokeOrNoop(<var>stream</var>@[[underlyingSource]],
+    <code>"pull"</code>, «‍<var>stream</var>@[[enqueue]], <var>stream</var>@[[close]]»).
+  
+    </li><li> Upon fulfillment of <var>stream</var>@[[pullingPromise]], set <var>stream</var>@[[pullingPromise]] to
+    <b>undefined</b>.
+  
+    </li><li> Upon rejection of <var>stream</var>@[[pullingPromise]] with reason <var>e</var>, call-with-rethrow
+    <var>stream</var>@[[error]](<var>e</var>).
+  
+    </li><li> Return <b>undefined</b>.
+</li></ol>
+
+
+   <h4 class="heading settled" data-level="3.4.3" id="cancel-readable-stream"><span class="secno">3.4.3. </span><span class="content">CancelReadableStream ( stream, reason )</span><a class="self-link" href="#cancel-readable-stream"></a></h4>
+
+
+   <ol>
+  
+    <li> If <var>stream</var>@[[state]] is <code>"closed"</code>, return a new promise resolved with <b>undefined</b>.
+  
+    </li><li> If <var>stream</var>@[[state]] is <code>"errored"</code>, return a new promise rejected with
+    <var>stream</var>@[[storedError]].
+  
+    </li><li> Set <var>stream</var>@[[queue]] to a new empty List.
+  
+    </li><li> Call-with-rethrow CloseReadableStream(<var>stream</var>).
+  
+    </li><li> Let <var>sourceCancelPromise</var> be PromiseInvokeOrNoop(<var>stream</var>@[[underlyingSource]],
+    <code>"cancel"</code>, «‍<var>reason</var>»).
+  
+    </li><li> Return the result of transforming <var>sourceCancelPromise</var> by a fulfillment handler that returns
+    <b>undefined</b>.
+</li></ol>
+
+
+   <h4 class="heading settled" data-level="3.4.4" id="close-readable-stream"><span class="secno">3.4.4. </span><span class="content">CloseReadableStream ( stream )</span><a class="self-link" href="#close-readable-stream"></a></h4>
+
+
+   <ol>
+  
+    <li> Assert: <var>stream</var>@[[state]] is <code>"readable"</code>.
+  
+    </li><li> Set <var>stream</var>@[[state]] to <code>"closed"</code>.
+  
+    </li><li> If IsReadableStreamLocked(<var>stream</var>) is <b>true</b>, return
+    ReleaseReadableStreamReader(<var>stream</var>).
+  
+    </li><li> Return <b>undefined</b>.
+</li></ol>
+
+
+   <h4 class="heading settled" data-level="3.4.5" id="close-readable-stream-reader"><span class="secno">3.4.5. </span><span class="content">CloseReadableStreamReader ( reader )</span><a class="self-link" href="#close-readable-stream-reader"></a></h4>
+
+
+   <ol>
+  
+    <li> Repeat for each <var>readRequestPromise</var> that is an element of <var>reader</var>@[[readRequests]],
+    
+     <ol>
+      
+      <li> Resolve <var>readRequestPromise</var> with CreateIterResultObject(<b>undefined</b>, <b>true</b>).
+    
+     </li></ol>
+     
+  
+    </li><li> Set <var>reader</var>@[[readRequests]] to a new empty List.
+  
+    </li><li> Resolve <var>reader</var>@[[closedPromise]] with <b>undefined</b>.
+  
+    </li><li> Return <b>undefined</b>.
+</li></ol>
+
+
+   <h4 class="heading settled" data-level="3.4.6" id="create-readable-stream-close-function"><span class="secno">3.4.6. </span><span class="content">CreateReadableStreamCloseFunction ( stream )</span><a class="self-link" href="#create-readable-stream-close-function"></a></h4>
+
+
+   <ol>
+  
+    <li> Return a new <a data-link-type="dfn" href="#readable-stream-close-function">Readable Stream Close Function</a> closing over <var>stream</var>.
+</li></ol>
+
+
+   <p>A <dfn data-dfn-type="dfn" data-noexport="" id="readable-stream-close-function">Readable Stream Close Function<a class="self-link" href="#readable-stream-close-function"></a></dfn> is a built-in anonymous function of zero arguments, closing over a variable
+<var>stream</var>, that performs the following steps:</p>
+
+
+   <ol>
+  
+    <li> If <var>stream</var>@[[state]] is not <code>"readable"</code>, return <b>undefined</b>.
+  
+    </li><li> If <var>stream</var>@[[queue]] is empty, return CloseReadableStream(<var>stream</var>).
+  
+    </li><li> Set <var>stream</var>@[[draining]] to <b>true</b>.
+</li></ol>
+
+
+   <h4 class="heading settled" data-level="3.4.7" id="create-readable-stream-enqueue-function"><span class="secno">3.4.7. </span><span class="content">CreateReadableStreamEnqueueFunction ( stream )</span><a class="self-link" href="#create-readable-stream-enqueue-function"></a></h4>
+
+
+   <ol>
+  
+    <li> Return a new <a data-link-type="dfn" href="#readable-stream-enqueue-function">Readable Stream Enqueue Function</a> closing over <var>stream</var>.
+</li></ol>
+
+
+   <p>A <dfn data-dfn-type="dfn" data-noexport="" id="readable-stream-enqueue-function">Readable Stream Enqueue Function<a class="self-link" href="#readable-stream-enqueue-function"></a></dfn> is a built-in anonymous function of one argument <var>chunk</var>,
+closing over a variable <var>stream</var>, that performs the following steps:</p>
+
+
+   <ol>
+  
+    <li> If <var>stream</var>@[[state]] is <code>"errored"</code>, throw <var>stream</var>@[[storedError]].
+  
+    </li><li> If <var>stream</var>@[[state]] is <code>"closed"</code>, throw a <b>TypeError</b> exception.
+  
+    </li><li> If <var>stream</var>@[[draining]] is <b>true</b>, throw a <b>TypeError</b> exception.
+  
+    </li><li> If IsReadableStreamLocked(<var>stream</var>) is <b>true</b> and <var>stream</var>@[[reader]]@[[readRequests]]
+    is not empty,
+    
+     <ol>
+      
+      <li> Let <var>readRequestPromise</var> be the first element of <var>stream</var>@[[reader]]@[[readRequests]].
+      
+      </li><li>Remove <var>readRequestPromise</var> from <var>stream</var>@[[reader]]@[[readRequests]], shifting all other
+        elements downward (so that the second becomes the first, and so on).
+      
+      </li><li> Resolve <var>readRequestPromise</var> with CreateIterResultObject(<var>chunk</var>, <b>false</b>).
+    
+     </li></ol>
+     
+  
+    </li><li> Otherwise,
+    
+     <ol>
+      
+      <li> Let <var>chunkSize</var> be <b>1</b>.
+      
+      </li><li> Let <var>strategy</var> be Get(<var>stream</var>@[[underlyingSource]], <code>"strategy"</code>).
+      
+      </li><li> If <var>strategy</var> is an abrupt completion,
+        
+       <ol>
+          
+        <li> Call-with-rethrow Call(<var>stream</var>@[[error]], <b>undefined</b>, «‍<var>strategy</var>.[[value]]»).
+          
+        </li><li> Return <var>strategy</var>.
+        
+       </li></ol>
+       
+      
+      </li><li> Let <var>strategy</var> be <var>strategy</var>.[[value]].
+      
+      </li><li> If <var>strategy</var> is not <b>undefined</b>, then
+        
+       <ol>
+          
+        <li> Set <var>chunkSize</var> to Invoke(<var>strategy</var>, <code>"size"</code>, «‍<var>chunk</var>»).
+          
+        </li><li> If <var>chunkSize</var> is an abrupt completion,
+            
+         <ol>
+              
+          <li> Call-with-rethrow Call(<var>stream</var>@[[error]], <b>undefined</b>,
+                «‍<var>chunkSize</var>.[[value]]»).
+              
+          </li><li> Return <var>chunkSize</var>.
+            
+         </li></ol>
+         
+          
+        </li><li> Let <var>chunkSize</var> be <var>chunkSize</var>.[[value]].
+        
+       </li></ol>
+       
+      
+      </li><li>Let <var>enqueueResult</var> be EnqueueValueWithSize(<var>stream</var>@[[queue]], <var>chunk</var>,
+        <var>chunkSize</var>.[[value]]).
+      
+      </li><li> If <var>enqueueResult</var> is an abrupt completion,
+        
+       <ol>
+          
+        <li> Call-with-rethrow Call(<var>stream</var>@[[error]], <b>undefined</b>,
+            «‍<var>enqueueResult</var>.[[value]]»).
+          
+        </li><li> Return <var>enqueueResult</var>.
+        
+       </li></ol>
+       
+    
+     </li></ol>
+     
+  
+    </li><li> Call-with-rethrow CallReadableStreamPull(<var>stream</var>).
+  
+    </li><li> Let <var>shouldApplyBackpressure</var> be ShouldReadableStreamApplyBackpressure(<var>stream</var>).
+  
+    </li><li> ReturnIfAbrupt(<var>shouldApplyBackpressure</var>).
+  
+    </li><li> If <var>shouldApplyBackpressure</var> is <b>true</b>, return <b>false</b>.
+  
+    </li><li> Return <b>true</b>.
+</li></ol>
+
+
+   <h4 class="heading settled" data-level="3.4.8" id="create-readable-stream-error-function"><span class="secno">3.4.8. </span><span class="content">CreateReadableStreamErrorFunction ( stream )</span><a class="self-link" href="#create-readable-stream-error-function"></a></h4>
+
+
+   <ol>
+  
+    <li> Return a new <a data-link-type="dfn" href="#readable-stream-error-function">Readable Stream Error Function</a> closing over <var>stream</var>.
+</li></ol>
+
+
+   <p>A <dfn data-dfn-type="dfn" data-noexport="" id="readable-stream-error-function">Readable Stream Error Function<a class="self-link" href="#readable-stream-error-function"></a></dfn> is a built-in anonymous function of one argument <var>e</var>, closing over
+a variable <var>stream</var>, that performs the following steps:</p>
+
+
+   <ol>
+  
+    <li> If <var>stream</var>@[[state]] is not <code>"readable"</code> return <b>undefined</b>.
+  
+    </li><li> Let <var>stream</var>@[[queue]] be a new empty List.
+  
+    </li><li> Set <var>stream</var>@[[storedError]] to <var>e</var>.
+  
+    </li><li> Set <var>stream</var>@[[state]] to <code>"errored"</code>.
+  
+    </li><li> If IsReadableStreamLocked(<var>stream</var>) is <b>true</b>, return
+    ReleaseReadableStreamReader(<var>stream</var>@[[reader]]).
+</li></ol>
+
+
+   <h4 class="heading settled" data-level="3.4.9" id="is-readable-stream"><span class="secno">3.4.9. </span><span class="content">IsReadableStream ( x )</span><a class="self-link" href="#is-readable-stream"></a></h4>
+
+
+   <ol>
+  
+    <li> If Type(<var>x</var>) is not Object, return <b>false</b>.
+  
+    </li><li> If <var>x</var> does not have a [[underlyingSource]] internal slot, return <b>false</b>.
+  
+    </li><li> Return <b>true</b>.
+</li></ol>
+
+
+   <h4 class="heading settled" data-level="3.4.10" id="is-readable-stream-locked"><span class="secno">3.4.10. </span><span class="content">IsReadableStreamLocked ( stream )</span><a class="self-link" href="#is-readable-stream-locked"></a></h4>
+
+
+   <div class="note" role="note">
+  This abstract operation is meant to be called from other specifications that may wish to query whether or not a
+  readable stream is <a data-link-type="dfn" href="#locked-to-a-reader">locked to a reader</a>.
+</div>
+
+
+   <ol>
+  
+    <li> Assert: IsReadableStream(<var>stream</var>) is <b>true</b>.
+  
+    </li><li> If <var>stream</var>@[[reader]] is <b>undefined</b>, return <b>false</b>.
+  
+    </li><li> Return <b>true</b>.
+</li></ol>
+
+
+   <h4 class="heading settled" data-level="3.4.11" id="is-readable-stream-reader"><span class="secno">3.4.11. </span><span class="content">IsReadableStreamReader ( x )</span><a class="self-link" href="#is-readable-stream-reader"></a></h4>
+
+
+   <ol>
+  
+    <li> If Type(<var>x</var>) is not Object, return <b>false</b>.
+  
+    </li><li> If <var>x</var> does not have a [[ownerReadableStream]] internal slot, return <b>false</b>.
+  
+    </li><li> Return <b>true</b>.
+</li></ol>
+
+
+   <h4 class="heading settled" data-level="3.4.12" id="release-readable-stream-reader"><span class="secno">3.4.12. </span><span class="content">ReleaseReadableStreamReader ( reader )</span><a class="self-link" href="#release-readable-stream-reader"></a></h4>
+
+
+   <ol>
+  
+    <li> Assert: <var>reader</var>@[[ownerReadableStream]] is not <b>undefined</b>.
+  
+    </li><li> If <var>reader</var>@[[ownerReadableStream]]@[[state]] is <code>"errored"</code>,
+    
+     <ol>
+      
+      <li> Set <var>reader</var>@[[state]] to <code>"errored"</code>.
+      
+      </li><li> Let <var>e</var> be <var>reader</var>@[[ownerReadableStream]]@[[storedError]].
+      
+      </li><li> Set <var>reader</var>@[[storedError]] to <var>e</var>.
+      
+      </li><li> Reject <var>reader</var>@[[closedPromise]] with <var>e</var>.
+      
+      </li><li> Repeat for each <var>readRequestPromise</var> that is an element of <var>reader</var>@[[readRequests]],
+        
+       <ol>
+          
+        <li> Reject <var>readRequestPromise</var> with <var>e</var>.
+        
+       </li></ol>
+       
+    
+     </li></ol>
+     
+  
+    </li><li> Otherwise,
+    
+     <ol>
+      
+      <li> Set <var>reader</var>@[[state]] to <code>"closed"</code>.
+      
+      </li><li> Resolve <var>reader</var>@[[closedPromise]] with <b>undefined</b>.
+      
+      </li><li> Repeat for each <var>readRequestPromise</var> that is an element of <var>reader</var>@[[readRequests]],
+        
+       <ol>
+          
+        <li> Resolve <var>readRequestPromise</var> with CreateIterResultObject(<b>undefined</b>, <b>true</b>).
+        
+       </li></ol>
+       
+    
+     </li></ol>
+     
+  
+    </li><li> Set <var>reader</var>@[[readRequests]] to a new empty List.
+  
+    </li><li> Set <var>reader</var>@[[ownerReadableStream]]@[[reader]] to <b>undefined</b>.
+  
+    </li><li> Set <var>reader</var>@[[ownerReadableStream]] to <b>undefined</b>.
+</li></ol>
+
+
+   <h4 class="heading settled" data-level="3.4.13" id="should-readable-stream-apply-backpressure"><span class="secno">3.4.13. </span><span class="content">ShouldReadableStreamApplyBackpressure ( stream )</span><a class="self-link" href="#should-readable-stream-apply-backpressure"></a></h4>
+
+
+   <ol>
+  
+    <li> Let <var>queueSize</var> be GetTotalQueueSize(<var>stream</var>@[[queue]]).
+  
+    </li><li> ReturnIfAbrupt(<var>queueSize</var>).
+  
+    </li><li> Let <var>shouldApplyBackpressure</var> be <b>true</b> if <var>queueSize</var> &gt; <b>1</b>, and <b>false</b>
+    otherwise.
+  
+    </li><li> Let <var>strategy</var> be Get(<var>stream</var>@[[underlyingSource]], <code>"strategy"</code>).
+  
+    </li><li> If <var>strategy</var> is an abrupt completion,
+    
+     <ol>
+      
+      <li> Call-with-rethrow Call(<var>stream</var>@[[error]], <b>undefined</b>, «‍<var>strategy</var>.[[value]]»).
+      
+      </li><li> Return <var>strategy</var>.
+    
+     </li></ol>
+     
+  
+    </li><li> Let <var>strategy</var> be <var>strategy</var>.[[value]].
+  
+    </li><li> If <var>strategy</var> is not <b>undefined</b>, then
+    
+     <ol>
+      
+      <li> Set <var>shouldApplyBackpressure</var> to ToBoolean(Invoke(<var>strategy</var>,
+        <code>"shouldApplyBackpressure"</code>, «‍<var>queueSize</var>»)).
+      
+      </li><li> If <var>shouldApplyBackpressure</var> is an abrupt completion, call-with-rethrow
+        Call(<var>stream</var>@[[error]], <b>undefined</b>, «‍<var>shouldApplyBackpressure</var>.[[value]]»).
+    
+     </li></ol>
+     
+  
+    </li><li> Return <var>shouldApplyBackpressure</var>.
+</li></ol>
+
+
+   <h2 class="heading settled" data-level="4" id="ws"><span class="secno">4. </span><span class="content">Writable Streams</span><a class="self-link" href="#ws"></a></h2>
+
+
+   <h3 class="heading settled" data-level="4.1" id="ws-intro"><span class="secno">4.1. </span><span class="content">Using Writable Streams</span><a class="self-link" href="#ws-intro"></a></h3>
+
+
+   <div class="example">
+  The usual way to write to a writable stream is to simply <a data-link-type="dfn" href="#piping">pipe</a> a <a data-link-type="dfn" href="#readable-stream">readable stream</a> to it.
+  This ensures that <a data-link-type="dfn" href="#backpressure">backpressure</a> is respected, so that if the writable stream’s <a data-link-type="dfn" href="#underlying-sink">underlying sink</a> is not
+  able to accept data as fast as the readable stream can produce it, the readable stream is informed of this and has a
+  chance to slow down its data production.
+
+  
+    <pre><code class="lang-javascript">readableStream.pipeTo(writableStream)
+  .then(() =&gt; console.log("All data successfully written!"))
+  .catch(e =&gt; console.error("Something went wrong!", e));
+</code></pre>
+</div>
+
+
+   <div class="example">
+  You can also write directly to writable streams using their <code>write()</code> and <code>close()</code> methods.
+  Since writable streams queue any incoming writes, and take care internally to forward them to the <a data-link-type="dfn" href="#underlying-sink">underlying
+  sink</a> in sequence, you can indiscriminately write to a writable stream without much ceremony:
+
+  
+    <pre><code class="lang-javascript">function writeArrayToStream(array, writableStream) {
+  array.forEach(chunk =&gt; writableStream.write(chunk));
+
+  return writableStream.close();
+}
+
+writeArrayToStream([1, 2, 3, 4, 5], writableStream)
+  .then(() =&gt; console.log("All done!"))
+  .catch(e =&gt; console.error("Error with the stream: " + e));
+</code></pre>
+</div>
+
+
+   <div class="example">
+  In the previous example we only paid attention to the success or failure of the entire stream, by looking at the
+  promise returned by its <code>close()</code> method. That promise (which can also be accessed using the
+  <code>closed</code> getter) will reject if anything goes wrong with the stream—initializing it, writing to it, or
+  closing it. And it will fulfill once the stream is successfully closed. Often this is all you care about.
+
+
+    <p>However, if you care about the success of writing a specific <a data-link-type="dfn" href="#chunk">chunk</a>, you can use the promise returned by the
+  stream’s <code>write()</code> method:</p>
+
+  
+    <pre><code class="lang-javascript">writableStream.write("i am a chunk of data")
+  .then(() =&gt; console.log("chunk successfully written!"))
+  .catch(e =&gt; console.error(e));
+</code></pre>
+
+
+    <p>What "success" means is up to a given stream instance (or more precisely, its <a data-link-type="dfn" href="#underlying-sink">underlying sink</a>) to decide. For
+  example, for a file stream it could simply mean that the OS has accepted the write, and not necessarily that the
+  chunk has been flushed to disk.</p>
+</div>
+
+
+   <h3 class="heading settled" data-level="4.2" id="ws-class"><span class="secno">4.2. </span><span class="content">Class <code>WritableStream</code></span><a class="self-link" href="#ws-class"></a></h3>
+
+
+   <h4 class="heading settled" data-level="4.2.1" id="ws-class-definition"><span class="secno">4.2.1. </span><span class="content">Class Definition</span><a class="self-link" href="#ws-class-definition"></a></h4>
+
+
+   <p><em>This section is non-normative.</em></p>
+
+
+   <p>If one were to write the <code>WritableStream</code> class in something close to the syntax of <a data-link-type="biblio" href="#biblio-ecmascript">[ECMASCRIPT]</a>, it
+would look like</p>
+
+
+
+   <pre><code class="lang-javascript">class WritableStream {
+  constructor(underlyingSink = {})
+
+  get closed()
+  get ready()
+  get state()
+
+  abort(reason)
+  close()
+  write(chunk)
+}
+</code></pre>
+
+
+   <h4 class="heading settled" data-level="4.2.2" id="ws-internal-slots"><span class="secno">4.2.2. </span><span class="content">Internal Slots</span><a class="self-link" href="#ws-internal-slots"></a></h4>
+
+
+   <p>Instances of <code>WritableStream</code> are created with the internal slots described in the following table:</p>
+
+
+   <table>
+  
+    <thead>
+    
+     <tr>
+      
+      <th>Internal Slot
+      
+      
+      </th><th>Description (<em>non-normative</em>)
+      
+    
+     
+  
+  
+    </th></tr></thead><tbody>
+     <tr>
+    
+      <td>[[closedPromise]]
+    
+      </td><td>A promise that becomes fulfilled when the stream becomes <code>"closed"</code>; returned by the
+      <code>closed</code> getter
+  
+     
+  
+     </td></tr><tr>
+    
+      <td>[[error]]
+    
+      </td><td>A <a data-link-type="dfn" href="#writable-stream-error-function">Writable Stream Error Function</a> created with the ability to move this stream to an
+      <code>"errored"</code> state
+  
+     
+  
+     </td></tr><tr>
+    
+      <td>[[queue]]
+    
+      </td><td>A List representing the stream’s internal queue of pending writes
+  
+     
+  
+     </td></tr><tr>
+    
+      <td>[[started]]
+    
+      </td><td>A boolean flag indicating whether the <a data-link-type="dfn" href="#underlying-sink">underlying sink</a> has finished starting
+  
+     
+  
+     </td></tr><tr>
+    
+      <td>[[startedPromise]]
+    
+      </td><td>A promise storing the result of starting the <a data-link-type="dfn" href="#underlying-sink">underlying sink</a>, used to delay actions until that is
+      complete
+  
+     
+  
+     </td></tr><tr>
+    
+      <td>[[state]]
+    
+      </td><td>A string containing the stream’s current state; returned by the <code>state</code> getter
+  
+     
+  
+     </td></tr><tr>
+    
+      <td>[[storedError]]
+    
+      </td><td>A value indicating how the stream failed, to be given as a failure reason or exception when trying to operate
+      on the stream while in the <code>"errored"</code> state
+  
+     
+  
+     </td></tr><tr>
+    
+      <td>[[readyPromise]]
+    
+      </td><td>A promise returned by the <code>ready</code> getter
+  
+     
+  
+     </td></tr><tr>
+    
+      <td>[[underlyingSink]]
+    
+      </td><td>An object representation of the stream’s <a data-link-type="dfn" href="#underlying-sink">underlying sink</a>, including its <a data-link-type="dfn" href="#queuing-strategy">queuing strategy</a>; also
+      used for the <a href="#is-writable-stream">IsWritableStream</a> brand check
+  
+     
+  
+     </td></tr><tr>
+    
+      <td>[[writing]]
+    
+      </td><td>A boolean flag indicating whether the stream is currently writing to the <a data-link-type="dfn" href="#underlying-sink">underlying sink</a>, used to
+      prevent concurrent such writes
+  
+     
+</td></tr></tbody></table>
+
+
+   <h4 class="heading settled" data-level="4.2.3" id="ws-constructor"><span class="secno">4.2.3. </span><span class="content">new WritableStream(underlyingSink = {})</span><a class="self-link" href="#ws-constructor"></a></h4>
+
+
+   <div class="note" role="note">
+  The <var>underlyingSink</var> object passed to the constructor can implement any of the following methods to govern
+  how the constructed stream instance behaves:
+
+  
+    <ul>
+    
+     <li> <code>start(error)</code> is called immediately, and should perform any actions necessary to acquire
+      access to the <a data-link-type="dfn" href="#underlying-sink">underlying sink</a>. If this process is asynchronous, it can return a promise to signal success
+      or failure.
+    
+     </li><li> <code>write(chunk)</code> is called when a new <a data-link-type="dfn" href="#chunk">chunk</a> of data is ready to be written to the
+      <a data-link-type="dfn" href="#underlying-sink">underlying sink</a>. It can return a promise to signal success or failure of the write operation. The stream
+      implementation guarantees that this method will be called only after previous writes have succeeded, and never
+      after <code>close</code> or <code>abort</code> is called.
+    
+     </li><li> <code>close()</code> is called after the producer signals that they are done writing chunks to the stream, and
+      all queued-up writes successfully complete. It should perform any actions necessary to finalize writes to the
+      <a data-link-type="dfn" href="#underlying-sink">underlying sink</a>, and release access to it. If this process is asynchronous, it can return a promise to
+      signal success or failure. The stream implementation guarantees that this method will be called only after all
+      queued-up writes have succeeded.
+    
+     </li><li> <code>abort(reason)</code> is called when the producer signals they wish to abruptly close the stream
+      and put it in an <code>"errored"</code> state. It should clean up any held resources, much like
+      <code>close</code>, but perhaps with some custom handling. Unlike <code>close</code>, <var>abort</var> will be
+      called even if writes are queued up; those <a data-link-type="dfn" href="#chunk">chunks</a> will be thrown away. If this process is asynchronous, it
+      can return a promise to signal success or failure. If no abort method is passed, by default the
+      <code>close</code> method will be called instead.
+  
+    </li></ul>
+
+
+    <p>The underlying sink can also have a <code>strategy</code> property containing a <a data-link-type="dfn" href="#queuing-strategy">queuing strategy</a> object with
+  two methods <code>shouldApplyBackpressure(queueSize)</code> and <code>size(chunk)</code>. These could be instances of
+  the built-in <code>CountQueuingStrategy</code> or <code>ByteLengthQueuingStrategy</code> classes, or custom strategy
+  objects. By default, a strategy that applies backpressure whenever writing into a non-empty queue will be used.</p>
+</div>
+
+
+   <div class="note" role="note">
+  Due to the way writable streams asynchronously close, it is possible for both <code>close</code> and
+  <code>abort</code> to be called, in cases where the <a data-link-type="dfn" href="#producer">producer</a> aborts the stream while it is in the
+  <code>"closing"</code> state. Notably, since a stream always spends at least one turn in the <code>"closing"</code>
+  state, code like <code>ws.close(); ws.abort(...);</code> will cause both to be called, even if the <code>close</code>
+  method itself has no asynchronous behavior. A well-designed <a data-link-type="dfn" href="#underlying-sink">underlying sink</a> object should be able to deal with
+  this.
+</div>
+
+
+   <ol>
+  
+    <li> Set <b>this</b>@[[underlyingSink]] to <var>underlyingSink</var>.
+  
+    </li><li> Set <b>this</b>@[[closedPromise]] to a new promise.
+  
+    </li><li> Set <b>this</b>@[[readyPromise]] to a new promise resolved with <b>undefined</b>.
+  
+    </li><li> Set <b>this</b>@[[queue]] to a new empty List.
+  
+    </li><li> Set <b>this</b>@[[state]] to <code>"writable"</code>.
+  
+    </li><li> Set <b>this</b>@[[started]] and <b>this</b>@[[writing]] to <b>false</b>.
+  
+    </li><li> Set <b>this</b>@[[error]] to CreateWritableStreamErrorFunction(<b>this</b>).
+  
+    </li><li> Call-with-rethrow SyncWritableStreamStateWithQueue(<b>this</b>).
+  
+    </li><li> Let <var>startResult</var> be InvokeOrNoop(<var>underlyingSink</var>, <code>"start"</code>,
+    «‍<b>this</b>@[[error]]»).
+  
+    </li><li> ReturnIfAbrupt(<var>startResult</var>).
+  
+    </li><li> Set <b>this</b>@[[startedPromise]] to the result of resolving <var>startResult</var> as a promise.
+    
+     <ol>
+      
+      <li> Upon fulfillment,
+        
+       <ol>
+          
+        <li> Set <b>this</b>@[[started]] to <b>true</b>.
+          
+        </li><li> Set <b>this</b>@[[startedPromise]] to <b>undefined</b>.
+        
+       </li></ol>
+       
+      
+      </li><li> Upon rejection with reason <var>r</var>, call-with-rethrow Call(<b>this</b>@[[error]], <b>undefined</b>,
+        «‍<var>r</var>»).
+    
+     </li></ol>
+     
+</li></ol>
+
+
+   <h4 class="heading settled" data-level="4.2.4" id="ws-prototype"><span class="secno">4.2.4. </span><span class="content">Properties of the <code>WritableStream</code> Prototype</span><a class="self-link" href="#ws-prototype"></a></h4>
+
+
+   <h5 class="heading settled" data-level="4.2.4.1" id="ws-closed"><span class="secno">4.2.4.1. </span><span class="content">get closed</span><a class="self-link" href="#ws-closed"></a></h5>
+
+
+   <div class="note" role="note">
+  The <code>closed</code> getter returns a promise that will be fulfilled when the stream becomes closed, or rejected
+  if it ever errors.
+</div>
+
+
+   <ol>
+  
+    <li> If IsWritableStream(<b>this</b>) is <b>false</b>, return a promise rejected with a <b>TypeError</b> exception.
+  
+    </li><li> Return <b>this</b>@[[closedPromise]].
+</li></ol>
+
+
+   <h5 class="heading settled" data-level="4.2.4.2" id="ws-ready"><span class="secno">4.2.4.2. </span><span class="content">get ready</span><a class="self-link" href="#ws-ready"></a></h5>
+
+
+   <div class="note" role="note">
+  The <code>ready</code> getter returns a promise that will be fulfilled when the stream transitions away from the
+  <code>"waiting"</code> state to any other state. Once the stream transitions back to <code>"waiting"</code>, the
+  getter will return a new promise that stays pending until the next state transition.
+
+
+    <p>In essence, this promise gives a signal as to when any backpressure has let up (or that the stream has been closed
+  or errored).</p>
+</div>
+
+
+   <ol>
+  
+    <li> If IsWritableStream(<b>this</b>) is <b>false</b>, return a promise rejected with a <b>TypeError</b> exception.
+  
+    </li><li> Return <b>this</b>@[[readyPromise]].
+</li></ol>
+
+
+   <h5 class="heading settled" data-level="4.2.4.3" id="ws-state"><span class="secno">4.2.4.3. </span><span class="content">get state</span><a class="self-link" href="#ws-state"></a></h5>
+
+
+   <div class="note" role="note">
+  The <code>state</code> getter returns the state of the stream, which will be one of the following:
+
+  
+    <dl>
+    
+     <dt><code>"waiting"</code>
+    
+     </dt><dd>The stream’s internal queue is full; that is, the stream is
+      exerting <a data-link-type="dfn" href="#backpressure">backpressure</a>. Use <code>.ready</code> to be notified of when the pressure subsides.
+
+    
+     </dd><dt><code>"writable"</code>
+    
+     </dt><dd>The stream’s internal queue is not full; call <code>.write()</code> until backpressure is exerted.
+
+    
+     </dd><dt><code>"closing"</code>
+    
+     </dt><dd>The stream’s <code>.close()</code> method has been called, and a command to close is in the queue or
+      being processed by the <a data-link-type="dfn" href="#underlying-sink">underlying sink</a>; attempts to write will now fail.
+
+    
+     </dd><dt><code>"closed"</code>
+    
+     </dt><dd>The <a data-link-type="dfn" href="#underlying-sink">underlying sink</a> has been closed; writing is no longer possible.
+
+    
+     </dd><dt><code>"errored"</code>
+    
+     </dt><dd>An error occurred interacting with the <a data-link-type="dfn" href="#underlying-sink">underlying sink</a> or the stream has been aborted, so the stream is
+      now dead.
+  
+    </dd></dl>
+</div>
+
+
+   <ol>
+  
+    <li> If IsWritableStream(<b>this</b>) is <b>false</b>, throw a <b>TypeError</b> exception.
+  
+    </li><li> Return <b>this</b>@[[state]].
+</li></ol>
+
+
+   <h5 class="heading settled" data-level="4.2.4.4" id="ws-abort"><span class="secno">4.2.4.4. </span><span class="content">abort(reason)</span><a class="self-link" href="#ws-abort"></a></h5>
+
+
+   <div class="note" role="note">
+  The <code>abort</code> method signals that the producer can no longer successfully write to the stream and it should
+  be immediately moved to an <code>"errored"</code> state, with any queued-up writes discarded. This will also execute
+  any abort mechanism of the <a data-link-type="dfn" href="#underlying-sink">underlying sink</a>.
+</div>
+
+
+   <ol>
+  
+    <li> If IsWritableStream(<b>this</b>) is <b>false</b>, return a promise rejected with a <b>TypeError</b> exception.
+  
+    </li><li> If <b>this</b>@[[state]] is <code>"closed"</code>, return a new promise resolved with <b>undefined</b>.
+  
+    </li><li> If <b>this</b>@[[state]] is <code>"errored"</code>, return a new promise rejected with
+    <b>this</b>@[[storedError]].
+  
+    </li><li> Call-with-rethrow Call(<b>this</b>@[[error]], <b>undefined</b>, «‍reason»).
+  
+    </li><li> Let <var>sinkAbortPromise</var> be PromiseInvokeOrFallbackOrNoop(<b>this</b>@[[underlyingSink]],
+    <code>"abort"</code>, (<var>reason</var>), <code>"close"</code>, «‍»).
+  
+    </li><li> Return the result of transforming <var>sinkAbortPromise</var> by a fulfillment handler that returns <b>undefined</b>.
+</li></ol>
+
+
+   <h5 class="heading settled" data-level="4.2.4.5" id="ws-close"><span class="secno">4.2.4.5. </span><span class="content">close()</span><a class="self-link" href="#ws-close"></a></h5>
+
+
+   <div class="note" role="note">
+  The <code>close</code> method signals that the producer is done writing chunks to the stream and wishes to move the
+  stream to a <code>"closed"</code> state. This queues an action to close the stream, such that once any currently
+  queued-up writes complete, the close mechanism of the <a data-link-type="dfn" href="#underlying-sink">underlying sink</a> will execute, releasing any held
+  resources. In the meantime, the stream will be in a <code>"closing"</code> state.
+</div>
+
+
+   <ol>
+  
+    <li> If IsWritableStream(<b>this</b>) is <b>false</b>, return a promise rejected with a <b>TypeError</b> exception.
+  
+    </li><li> If <b>this</b>@[[state]] is <code>"closing"</code> or <code>"closed"</code>, return a promise rejected with a
+    <b>TypeError</b> exception.
+  
+    </li><li> If <b>this</b>@[[state]] is <code>"errored"</code>, return a promise rejected with
+    <b>this</b>@[[storedError]].
+  
+    </li><li> If <b>this</b>@[[state]] is <code>"waiting"</code>, resolve <b>this</b>@[[readyPromise]] with <b>undefined</b>.
+  
+    </li><li> Set <b>this</b>@[[state]] to <code>"closing"</code>
+  
+    </li><li> Call-with-rethrow EnqueueValueWithSize(<b>this</b>@[[queue]], <code>"close"</code>, <b>0</b>).
+  
+    </li><li> Call-with-rethrow CallOrScheduleWritableStreamAdvanceQueue(<b>this</b>).
+  
+    </li><li>Return <b>this</b>@[[closedPromise]].
+</li></ol>
+
+
+   <h5 class="heading settled" data-level="4.2.4.6" id="ws-write"><span class="secno">4.2.4.6. </span><span class="content">write(chunk)</span><a class="self-link" href="#ws-write"></a></h5>
+
+
+   <div class="note" role="note">
+  The <code>write</code> method adds a write to the stream’s internal queue, instructing the stream to
+  write the given <a data-link-type="dfn" href="#chunk">chunk</a> of data to the <a data-link-type="dfn" href="#underlying-sink">underlying sink</a> once all other pending writes have finished
+  successfully. It returns a promise that will be fulfilled or rejected depending on the success or failure of writing
+  the chunk to the underlying sink.
+
+
+    <p>The impact of enqueuing this chunk will be immediately reflected in the stream’s <code>state</code> property; in
+  particular, if the internal queue is now full according to the stream’s <a data-link-type="dfn" href="#queuing-strategy">queuing strategy</a>, the stream will
+  exert backpressure by changing its state to <code>"waiting"</code>.</p>
+</div>
+
+
+   <ol>
+  
+    <li> If IsWritableStream(<b>this</b>) is <b>false</b>, return a promise rejected with a <b>TypeError</b> exception.
+  
+    </li><li> If <b>this</b>@[[state]] is <code>"closing"</code> or <code>"closed"</code>, return a promise rejected with a
+    <b>TypeError</b>.
+  
+    </li><li> If <b>this</b>@[[state]] is <code>"errored"</code>, return a promise rejected with
+    <b>this</b>@[[storedError]].
+  
+    </li><li> Assert: <b>this</b>@[[state]] is either <code>"waiting"</code> or <code>"writable"</code>.
+  
+    </li><li> Let <var>chunkSize</var> be <b>1</b>.
+  
+    </li><li> Let <var>strategy</var> be Get(<b>this</b>@[[underlyingSink]], <code>"strategy"</code>).
+  
+    </li><li> If <var>strategy</var> is an abrupt completion,
+    
+     <ol>
+      
+      <li> Call-with-rethrow Call(<b>this</b>@[[error]], <b>undefined</b>, «‍<var>strategy</var>.[[value]]»).
+      
+      </li><li> Return a new promise rejected with <var>strategy</var>.[[value]].
+    
+     </li></ol>
+     
+  
+    </li><li> Set <var>strategy</var> to <var>strategy</var>.[[value]].
+  
+    </li><li> If <var>strategy</var> is not <b>undefined</b>, then
+    
+    </li><li> Set <var>chunkSize</var> to Invoke(<var>strategy</var>, <code>"size"</code>, «‍<var>chunk</var>»).
+    
+    </li><li> If <var>chunkSize</var> is an abrupt completion,
+      
+     <ol>
+        
+      <li> Call-with-rethrow Call(<b>this</b>@[[error]], <b>undefined</b>, «‍<var>chunkSize</var>.[[value]]»).
+        
+      </li><li> Return a new promise rejected with <var>chunkSize</var>.[[value]].
+      
+     </li></ol>
+     
+    
+    
+    </li><li> Set <var>chunkSize</var> to <var>chunkSize</var>.[[value]].
+  
+    </li><li> Let <var>promise</var> be a new promise.
+  
+    </li><li> Let <var>writeRecord</var> be Record{[[promise]]: <var>promise</var>, [[chunk]]: <var>chunk</var>}.
+  
+    </li><li> Let <var>enqueueResult</var> be EnqueueValueWithSize(<b>this</b>@[[queue]], <var>writeRecord</var>,
+    <var>chunkSize</var>).
+  
+    </li><li> If <var>enqueueResult</var> is an abrupt completion,
+    
+     <ol>
+      
+      <li> Call-with-rethrow Call(<b>this</b>@[[error]], <b>undefined</b>, «‍<var>enqueueResult</var>.[[value]]»).
+      
+      </li><li> Return a new promise rejected with <var>enqueueResult</var>.[[value]].
+    
+     </li></ol>
+     
+  
+  
+    </li><li> Let <var>syncResult</var> be SyncWritableStreamStateWithQueue(<b>this</b>).
+  
+    </li><li> If <var>syncResult</var> is an abrupt completion,
+    
+     <ol>
+      
+      <li> Call-with-rethrow Call(<b>this</b>@[[error]], <b>undefined</b>, «‍<var>syncResult</var>.[[value]]»).
+      
+      </li><li> Return <var>promise</var>.
+    
+     </li></ol>
+     
+  
+  
+    </li><li> Call-with-rethrow CallOrScheduleWritableStreamAdvanceQueue(<b>this</b>).
+  
+    </li><li> Return <var>promise</var>.
+</li></ol>
+
+
+   <h3 class="heading settled" data-level="4.3" id="ws-abstract-ops"><span class="secno">4.3. </span><span class="content">Writable Stream Abstract Operations</span><a class="self-link" href="#ws-abstract-ops"></a></h3>
+
+
+   <h4 class="heading settled" data-level="4.3.1" id="call-or-schedule-writable-stream-advance-queue"><span class="secno">4.3.1. </span><span class="content">CallOrScheduleWritableStreamAdvanceQueue ( stream )</span><a class="self-link" href="#call-or-schedule-writable-stream-advance-queue"></a></h4>
+
+
+   <ol>
+  
+    <li> If <var>stream</var>@[[started]] is <b>false</b>, then
+    
+     <ol>
+      
+      <li> Upon fulfillment of <var>stream</var>@[[startedPromise]], call-with-rethrow
+        WritableStreamAdvanceQueue(<var>stream</var>).
+      
+      </li><li> Return <b>undefined</b>.
+    
+     </li></ol>
+     
+  
+    </li><li> Otherwise, return WritableStreamAdvanceQueue(<var>stream</var>).
+</li></ol>
+
+
+   <h4 class="heading settled" data-level="4.3.2" id="close-writable-stream"><span class="secno">4.3.2. </span><span class="content">CloseWritableStream ( stream )</span><a class="self-link" href="#close-writable-stream"></a></h4>
+
+
+   <ol>
+  
+    <li> Assert: <var>stream</var>@[[state]] is <code>"closing"</code>.
+  
+    </li><li> Let <var>sinkClosePromise</var> be PromiseInvokeOrNoop(<var>stream</var>@[[underlyingSink]],
+    <code>"close"</code>).
+    
+     <ol>
+      
+      <li> Upon fulfillment,
+        
+       <ol>
+          
+        <li> If <var>stream</var>@[[state]] is <code>"errored"</code>, return.
+          
+        </li><li> Assert: <var>stream</var>@[[state]] is <code>"closing"</code>.
+          
+        </li><li> Resolve <var>stream</var>@[[closedPromise]] with <b>undefined</b>.
+          
+        </li><li> Set <var>stream</var>@[[state]] to <code>"closed"</code>.
+        
+       </li></ol>
+       
+      
+      </li><li> Upon rejection with reason <var>r</var>, call-with-rethrow Call(<var>stream</var>@[[error]],
+        <b>undefined</b>, «‍<var>r</var>»).
+    
+     </li></ol>
+     
+  
+    </li><li> Return <b>undefined</b>.
+</li></ol>
+
+
+   <h4 class="heading settled" data-level="4.3.3" id="create-writable-stream-error-function"><span class="secno">4.3.3. </span><span class="content">CreateWritableStreamErrorFunction ( stream )</span><a class="self-link" href="#create-writable-stream-error-function"></a></h4>
+
+
+   <ol>
+  
+    <li> Return a new <a data-link-type="dfn" href="#writable-stream-error-function">Writable Stream Error Function</a> closing over <var>stream</var>.
+</li></ol>
+
+
+   <p>A <dfn data-dfn-type="dfn" data-noexport="" id="writable-stream-error-function">Writable Stream Error Function<a class="self-link" href="#writable-stream-error-function"></a></dfn> is a built-in anonymous function of one argument <var>e</var>, closing over
+a variable <var>stream</var>, that performs the following steps:</p>
+
+
+   <ol>
+  
+    <li> If <var>stream</var>@[[state]] is <code>"closed"</code> or <code>"errored"</code>, return <b>undefined</b>.
+  
+    </li><li> Repeat while <var>stream</var>@[[queue]] is not empty:
+    
+     <ol>
+      
+      <li> Let <var>writeRecord</var> be DequeueValue(<var>stream</var>@[[queue]]).
+      
+      </li><li> If <var>writeRecord</var> is not <code>"close"</code>, reject <var>writeRecord</var>.[[promise]] with
+        <var>e</var>.
+    
+     </li></ol>
+     
+  
+    </li><li> Set <var>stream</var>@[[storedError]] to <var>e</var>.
+  
+    </li><li> If <var>stream</var>@[[state]] is <code>"waiting"</code>, resolve <var>stream</var>@[[readyPromise]] with
+    <b>undefined</b>.
+  
+    </li><li> Reject <var>stream</var>@[[closedPromise]] with <var>e</var>.
+  
+    </li><li> Set <var>stream</var>@[[state]] to <code>"errored"</code>.
+</li></ol>
+
+
+   <h4 class="heading settled" data-level="4.3.4" id="is-writable-stream"><span class="secno">4.3.4. </span><span class="content">IsWritableStream ( x )</span><a class="self-link" href="#is-writable-stream"></a></h4>
+
+
+   <ol>
+  
+    <li> If Type(<var>x</var>) is not Object, return <b>false</b>.
+  
+    </li><li> If <var>x</var> does not have a [[underlyingSink]] internal slot, return <b>false</b>.
+  
+    </li><li> Return <b>true</b>.
+</li></ol>
+
+
+   <h4 class="heading settled" data-level="4.3.5" id="sync-writable-stream-state-with-queue"><span class="secno">4.3.5. </span><span class="content">SyncWritableStreamStateWithQueue ( stream )</span><a class="self-link" href="#sync-writable-stream-state-with-queue"></a></h4>
+
+
+   <ol>
+  
+    <li> If <var>stream</var>@[[state]] is <code>"closing"</code>, return <b>undefined</b>.
+  
+    </li><li> Assert: <var>stream</var>@[[state]] is either <code>"writable"</code> or <code>"waiting"</code>.
+  
+    </li><li> Let <var>queueSize</var> be GetTotalQueueSize(<var>stream</var>@[[queue]]).
+  
+    </li><li> ReturnIfAbrupt(<var>queueSize</var>).
+  
+    </li><li> Let <var>shouldApplyBackpressure</var> be <b>true</b> if <var>queueSize</var> &gt; 0, and <b>false</b> otherwise.
+  
+    </li><li> Let <var>strategy</var> be Get(<var>stream</var>@[[underlyingSink]], <code>"strategy"</code>).
+  
+    </li><li> ReturnIfAbrupt(<var>strategy</var>).
+  
+    </li><li> If <var>strategy</var> is not <b>undefined</b>, then
+    
+     <ol>
+      
+      <li> Set <var>shouldApplyBackpressure</var> to ToBoolean(Invoke(<var>strategy</var>,
+        <code>"shouldApplyBackpressure"</code>, «‍<var>queueSize</var>»)).
+      
+      </li><li> ReturnIfAbrupt(<var>shouldApplyBackpressure</var>).
+    
+     </li></ol>
+     
+  
+    </li><li> If <var>shouldApplyBackpressure</var> is <b>true</b> and <var>stream</var>@[[state]] is
+    <code>"writable"</code>, then
+    
+     <ol>
+      
+      <li> Set <var>stream</var>@[[state]] to <code>"waiting"</code>.
+      
+      </li><li> Set <var>stream</var>@[[readyPromise]] to a new promise.
+    
+     </li></ol>
+     
+  
+    </li><li> If <var>shouldApplyBackpressure</var> is <b>false</b> and <var>stream</var>@[[state]] is
+    <code>"waiting"</code>, then
+    
+     <ol>
+      
+      <li> Set <var>stream</var>@[[state]] to <code>"writable"</code>.
+      
+      </li><li> Resolve <var>stream</var>@[[readyPromise]] with <b>undefined</b>.
+    
+     </li></ol>
+     
+  
+    </li><li> Return <b>undefined</b>.
+</li></ol>
+
+
+   <h4 class="heading settled" data-level="4.3.6" id="writable-stream-advance-queue"><span class="secno">4.3.6. </span><span class="content">WritableStreamAdvanceQueue ( stream )</span><a class="self-link" href="#writable-stream-advance-queue"></a></h4>
+
+
+   <ol>
+  
+    <li> If <var>stream</var>@[[queue]] is empty, or <var>stream</var>@[[writing]] is <b>true</b>, return
+    <b>undefined</b>.
+  
+    </li><li> Let <var>writeRecord</var> be PeekQueueValue(<var>stream</var>@[[queue]]).
+  
+    </li><li> If <var>writeRecord</var> is <code>"close"</code>, then
+    
+     <ol>
+      
+      <li> Assert: <var>stream</var>@[[state]] is <code>"closing"</code>.
+      
+      </li><li> DequeueValue(<var>stream</var>@[[queue]]).
+      
+      </li><li> Assert: <var>stream</var>@[[queue]] is now empty.
+      
+      </li><li> Return CloseWritableStream(<var>stream</var>).
+    
+     </li></ol>
+     
+  
+    </li><li> Set <var>stream</var>@[[writing]] to <b>true</b>.
+  
+    </li><li> Let <var>writeResult</var> be PromiseInvokeOrNoop(<var>stream</var>@[[underlyingSink]], <code>"write"</code>,
+    «<var>writeRecord</var>.[[chunk]]»).
+  
+    </li><li> Upon fulfillment of <var>writeResult</var>,
+    
+     <ol>
+      
+      <li> If <var>stream</var>@[[state]] is <code>"errored"</code>, return.
+      
+      </li><li> Set <var>stream</var>@[[writing]] to <b>false</b>.
+      
+      </li><li> Resolve <var>writeRecord</var>.[[promise]] with <b>undefined</b>.
+      
+      </li><li> DequeueValue(<var>stream</var>@[[queue]]).
+      
+      </li><li> Let <var>syncResult</var> be SyncWritableStreamStateWithQueue(<var>stream</var>).
+      
+      </li><li> If <var>syncResult</var> is an abrupt completion, then call-with-rethrow Call(<var>stream</var>@[[error]],
+        <b>undefined</b>, «‍<var>syncResult</var>.[[value]]»).
+      
+      </li><li> Otherwise, return WritableStreamAdvanceQueue(<var>stream</var>).
+    
+     </li></ol>
+     
+  
+    </li><li> Upon rejection of <var>writeResult</var> with reason <var>r</var>, call-with-rethrow
+    Call(<var>stream</var>@[[error]], <b>undefined</b>, «‍<var>r</var>»).
+</li></ol>
+
+
+   <h2 class="heading settled" data-level="5" id="ts"><span class="secno">5. </span><span class="content">Transform Streams</span><a class="self-link" href="#ts"></a></h2>
+
+
+   <p>Transform streams have been developed in the testable implementation, but not yet re-encoded in spec language.
+We are waiting to validate their design before doing so. In the meantime, see
+<a href="https://github.com/whatwg/streams/blob/master/reference-implementation/lib/transform-stream.js">reference-implementation/lib/transform-stream.js</a>.</p>
+
+
+
+   <h2 class="heading settled" data-level="6" id="other-stuff"><span class="secno">6. </span><span class="content">Other Stream APIs and Operations</span><a class="self-link" href="#other-stuff"></a></h2>
+
+
+   <h3 class="heading settled" data-level="6.1" id="blqs-class"><span class="secno">6.1. </span><span class="content">Class <code>ByteLengthQueuingStrategy</code></span><a class="self-link" href="#blqs-class"></a></h3>
+
+
+   <p>A common <a data-link-type="dfn" href="#queuing-strategy">queuing strategy</a> when dealing with binary data is to wait until the accumulated <code>byteLength</code>
+properties of the incoming chunks reaches a specified high-water mark. As such, this is provided as a built-in
+<a data-link-type="dfn" href="#queuing-strategy">queuing strategy</a> that can be used when constructing streams.</p>
+
+
+   <div class="example">
+  When creating a <a data-link-type="dfn" href="#readable-stream">readable stream</a> or <a data-link-type="dfn" href="#writable-stream">writable stream</a>, you can supply a byte-length queuing strategy
+  directly:
+
+  
+    <pre><code class="lang-javascript">const stream = new ReadableStream({
+  ...,
+  strategy: new ByteLengthQueuingStrategy({ highWaterMark: 16 * 1024 })
+});
+</code></pre>
+
+
+    <p>In this case, 16 KiB worth of <a data-link-type="dfn" href="#chunk">chunks</a> can be enqueued by the readable stream’s <a data-link-type="dfn" href="#underlying-source">underlying source</a> before
+  the readable stream implementation starts sending <a data-link-type="dfn" href="#backpressure">backpressure</a> signals to the underlying source.</p>
+
+  
+    <pre><code class="lang-javascript">const stream = new WritableStream({
+  ...,
+  strategy: new ByteLengthQueuingStrategy({ highWaterMark: 32 * 1024 })
+});
+</code></pre>
+
+
+    <p>In this case, 32 KiB worth of <a data-link-type="dfn" href="#chunk">chunks</a> can be accumulated in the writable stream’s internal queue, waiting for
+  previous writes to the <a data-link-type="dfn" href="#underlying-sink">underlying sink</a> to finish, before the writable stream starts sending
+  <a data-link-type="dfn" href="#backpressure">backpressure</a> signals to any <a data-link-type="dfn" href="#producer">producers</a>.</p>
+</div>
+
+
+   <h4 class="heading settled" data-level="6.1.1" id="blqs-class-definition"><span class="secno">6.1.1. </span><span class="content">Class Definition</span><a class="self-link" href="#blqs-class-definition"></a></h4>
+
+
+   <p><em>This section is non-normative.</em></p>
+
+
+   <p>If one were to write the <code>ByteLengthQueuingStrategy</code> class in something close to the syntax of
+<a data-link-type="biblio" href="#biblio-ecmascript">[ECMASCRIPT]</a>, it would look like</p>
+
+
+   <pre><code class="lang-javascript">class ByteLengthQueuingStrategy {
+  constructor({ highWaterMark })
+  shouldApplyBackpressure(queueSize)
+  size(chunk)
+}
+</code></pre>
+
+
+   <h4 class="heading settled" data-level="6.1.2" id="blqs-internal-slots"><span class="secno">6.1.2. </span><span class="content">Internal Slots</span><a class="self-link" href="#blqs-internal-slots"></a></h4>
+
+
+   <p>Instances of <code>ByteLengthQueuingStrategy</code> are created with the internal slots described in the following
+table:</p>
+
+
+   <table>
+  
+    <thead>
+    
+     <tr>
+      
+      <th>Internal Slot
+      
+      
+      </th><th>Description (<em>non-normative</em>)
+      
+    
+     
+  
+  
+    </th></tr></thead><tbody>
+     <tr>
+    
+      <td>[[blqsHighWaterMark]]
+    
+      </td><td>A nonnegative number that determines when the strategy applies <a data-link-type="dfn" href="#backpressure">backpressure</a>
+  
+     
+</td></tr></tbody></table>
+
+
+   <h4 class="heading settled" data-level="6.1.3" id="blqs-constructor"><span class="secno">6.1.3. </span><span class="content">new ByteLengthQueuingStrategy({ highWaterMark })</span><a class="self-link" href="#blqs-constructor"></a></h4>
+
+
+   <div class="note" role="note">
+  The constructor takes a nonnegative number for the high-water mark, and stores it for later use.
+</div>
+
+
+   <ol>
+  
+    <li> Let <var>highWaterMark</var> be ToNumber(<var>highWaterMark</var>).
+  
+    </li><li> If <var>highWaterMark</var> is <b>NaN</b>, throw a <b>TypeError</b> exception.
+  
+    </li><li> If <var>highWaterMark</var> &lt; 0, throw a <b>RangeError</b> exception.
+  
+    </li><li> Set <b>this</b>@[[blqsHighWaterMark]] to <var>highWaterMark</var>.
+</li></ol>
+
+
+   <h4 class="heading settled" data-level="6.1.4" id="blqs-prototype"><span class="secno">6.1.4. </span><span class="content">Properties of the <code>ByteLengthQueuingStrategy</code> Prototype</span><a class="self-link" href="#blqs-prototype"></a></h4>
+
+
+   <h5 class="heading settled" data-level="6.1.4.1" id="blqs-should-apply-backpressure"><span class="secno">6.1.4.1. </span><span class="content">shouldApplyBackpressure(queueSize)</span><a class="self-link" href="#blqs-should-apply-backpressure"></a></h5>
+
+
+   <div class="note" role="note">
+  The <code>shouldApplyBackpressure</code> method returns whether or not the given queue size is greater than the
+  queuing strategy’s high-water mark.
+</div>
+
+
+   <ol>
+  
+    <li> If Type(<b>this</b>) is not Object, throw a <b>TypeError</b> exception.
+  
+    </li><li> If <b>this</b> does not have a [[blqsHighWaterMark]] internal slot, throw a <b>TypeError</b> exception.
+  
+    </li><li> Let <var>queueSize</var> be ToNumber(<var>queueSize</var>).
+  
+    </li><li> If <var>queueSize</var> is <b>NaN</b>, return <b>false</b>.
+  
+    </li><li> Return <var>queueSize</var> &gt; <b>this</b>@[[blqsHighWaterMark]].
+</li></ol>
+
+
+   <h5 class="heading settled" data-level="6.1.4.2" id="blqs-size"><span class="secno">6.1.4.2. </span><span class="content">size(chunk)</span><a class="self-link" href="#blqs-size"></a></h5>
+
+
+   <div class="note" role="note">
+  The <code>size</code> method returns the given chunk’s <code>byteLength</code> property. (If the chunk doesn’t have
+  one, it will return <b>undefined</b>, causing the stream using this strategy to error.)
+
+
+    <p>This method is intentionally generic; it does not require that its <b>this</b> value be a
+  <code>ByteLengthQueuingStrategy</code> object.</p>
+</div>
+
+
+   <ol>
+  
+    <li> Return Get(<var>chunk</var>, <code>"byteLength"</code>).
+</li></ol>
+
+
+   <h3 class="heading settled" data-level="6.2" id="cqs-class"><span class="secno">6.2. </span><span class="content">Class <code>CountQueuingStrategy</code></span><a class="self-link" href="#cqs-class"></a></h3>
+
+
+   <p>A common <a data-link-type="dfn" href="#queuing-strategy">queuing strategy</a> when dealing with streams of generic objects is to simply count the number of chunks
+that have been accumulated so far, waiting until this number reaches a specified high-water mark. As such, this
+strategy is also provided out of the box.</p>
+
+
+   <div class="example">
+  When creating a <a data-link-type="dfn" href="#readable-stream">readable stream</a> or <a data-link-type="dfn" href="#writable-stream">writable stream</a>, you can supply a count queuing strategy directly:
+
+  
+    <pre><code class="lang-javascript">const stream = new ReadableStream({
+  ...,
+  strategy: new CountQueuingStrategy({ highWaterMark: 10 })
+});
+</code></pre>
+
+
+    <p>In this case, 10 <a data-link-type="dfn" href="#chunk">chunks</a> (of any kind) can be enqueued by the readable stream’s <a data-link-type="dfn" href="#underlying-source">underlying source</a> before
+  the readable stream implementation starts sending <a data-link-type="dfn" href="#backpressure">backpressure</a> signals to the underlying source.</p>
+
+  
+    <pre><code class="lang-javascript">const stream = new WritableStream({
+  ...,
+  strategy: new CountQueuingStrategy({ highWaterMark: 5 })
+});
+</code></pre>
+
+
+    <p>In this case, five <a data-link-type="dfn" href="#chunk">chunks</a> (of any kind) can be accumulated in the writable stream’s internal queue, waiting
+  for previous writes to the <a data-link-type="dfn" href="#underlying-sink">underlying sink</a> to finish, before the writable stream starts sending
+  <a data-link-type="dfn" href="#backpressure">backpressure</a> signals to any <a data-link-type="dfn" href="#producer">producers</a>.</p>
+</div>
+
+
+   <h4 class="heading settled" data-level="6.2.1" id="cqs-class-definition"><span class="secno">6.2.1. </span><span class="content">Class Definition</span><a class="self-link" href="#cqs-class-definition"></a></h4>
+
+
+   <p><em>This section is non-normative.</em></p>
+
+
+   <p>If one were to write the <code>CountQueuingStrategy</code> class in something close to the syntax of <a data-link-type="biblio" href="#biblio-ecmascript">[ECMASCRIPT]</a>,
+it would look like</p>
+
+
+   <pre><code class="lang-javascript">class CountQueuingStrategy {
+  constructor({ highWaterMark })
+  shouldApplyBackpressure(queueSize)
+  size()
+}
+</code></pre>
+
+
+   <h4 class="heading settled" data-level="6.2.2" id="cqs-internal-slots"><span class="secno">6.2.2. </span><span class="content">Internal Slots</span><a class="self-link" href="#cqs-internal-slots"></a></h4>
+
+
+   <p>Instances of <code>CountQueuingStrategy</code> are created with the internal slots described in the following table:</p>
+
+
+   <table>
+  
+    <thead>
+    
+     <tr>
+      
+      <th>Internal Slot
+      
+      
+      </th><th>Description (<em>non-normative</em>)
+      
+    
+     
+  
+  
+    </th></tr></thead><tbody>
+     <tr>
+    
+      <td>[[cqsHighWaterMark]]
+    
+      </td><td>A nonnegative number that determines when the strategy applies <a data-link-type="dfn" href="#backpressure">backpressure</a>
+  
+     
+</td></tr></tbody></table>
+
+
+   <h4 class="heading settled" data-level="6.2.3" id="cqs-constructor"><span class="secno">6.2.3. </span><span class="content">new CountQueuingStrategy({ highWaterMark })</span><a class="self-link" href="#cqs-constructor"></a></h4>
+
+
+   <div class="note" role="note">
+  The constructor takes a nonnegative number for the high-water mark, and stores it for later use.
+</div>
+
+
+   <ol>
+  
+    <li> Let <var>highWaterMark</var> be ToNumber(<var>highWaterMark</var>).
+  
+    </li><li> If <var>highWaterMark</var> is <b>NaN</b>, throw a <b>TypeError</b> exception.
+  
+    </li><li> If <var>highWaterMark</var> &lt; 0, throw a <b>RangeError</b> exception.
+  
+    </li><li> Set <b>this</b>@[[cqsHighWaterMark]] to <var>highWaterMark</var>.
+</li></ol>
+
+
+   <h4 class="heading settled" data-level="6.2.4" id="cqs-prototype"><span class="secno">6.2.4. </span><span class="content">Properties of the <code>CountQueuingStrategy</code> Prototype</span><a class="self-link" href="#cqs-prototype"></a></h4>
+
+
+   <h5 class="heading settled" data-level="6.2.4.1" id="cqs-should-apply-backpressure"><span class="secno">6.2.4.1. </span><span class="content">shouldApplyBackpressure(queueSize)</span><a class="self-link" href="#cqs-should-apply-backpressure"></a></h5>
+
+
+   <div class="note" role="note">
+  The <code>shouldApplyBackpressure</code> method returns whether or not the given queue size is greater than the
+  queuing strategy’s high-water mark.
+</div>
+
+
+   <ol>
+  
+    <li> If Type(<b>this</b>) is not Object, throw a <b>TypeError</b> exception.
+  
+    </li><li> If <b>this</b> does not have a [[cqsHighWaterMark]] internal slot, throw a <b>TypeError</b> exception.
+  
+    </li><li> Let <var>queueSize</var> be ToNumber(<var>queueSize</var>).
+  
+    </li><li> If <var>queueSize</var> is <b>NaN</b>, return <b>false</b>.
+  
+    </li><li> Return <var>queueSize</var> &gt; <b>this</b>@[[cqsHighWaterMark]].
+</li></ol>
+
+
+   <h5 class="heading settled" data-level="6.2.4.2" id="cqs-size"><span class="secno">6.2.4.2. </span><span class="content">size()</span><a class="self-link" href="#cqs-size"></a></h5>
+
+
+   <div class="note" role="note">
+  The <code>size</code> method returns one always, so that the total queue size is a count of the number of chunks in
+  the queue.
+
+
+    <p>This method is intentionally generic; it does not require that its <b>this</b> value be a
+  <code>CountQueuingStrategy</code> object.</p>
+</div>
+
+
+   <ol>
+  
+    <li> Return 1.
+</li></ol>
+
+
+   <h3 class="heading settled" data-level="6.3" id="queue-with-sizes"><span class="secno">6.3. </span><span class="content">Queue-with-Sizes Operations</span><a class="self-link" href="#queue-with-sizes"></a></h3>
+
+
+   <p>The streams in this specification use a "queue-with-sizes" data structure to store queued up values, along with their
+determined sizes. A queue-with-sizes is a List of Records with [[value]] and [[size]] fields (although in
+implementations it would of course be backed by a more efficient data structure).</p>
+
+
+   <p>A number of abstract operations are specified here to make working with queues-with-sizes more pleasant, and used
+throughout the rest of this standard.</p>
+
+
+   <h4 class="heading settled" data-level="6.3.1" id="dequeue-value"><span class="secno">6.3.1. </span><span class="content">DequeueValue ( queue )</span><a class="self-link" href="#dequeue-value"></a></h4>
+
+
+   <ol>
+  
+    <li> Assert: <var>queue</var> is not empty.
+  
+    </li><li> Let <var>pair</var> be the first element of queue.
+  
+    </li><li> Remove <var>pair</var> from <var>queue</var>, shifting all other elements downward (so that the second becomes
+    the first, and so on).
+  
+    </li><li> Return <var>pair</var>.[[value]].
+</li></ol>
+
+
+   <h4 class="heading settled" data-level="6.3.2" id="enqueue-value-with-size"><span class="secno">6.3.2. </span><span class="content">EnqueueValueWithSize ( queue, value, size )</span><a class="self-link" href="#enqueue-value-with-size"></a></h4>
+
+
+   <ol>
+  
+    <li> Let <var>size</var> be ToNumber(<var>size</var>).
+  
+    </li><li> ReturnIfAbrupt(<var>size</var>).
+  
+    </li><li> If <var>size</var> is <b>NaN</b>, <b>+∞</b>, or <b>−∞</b>, throw a <b>RangeError</b> exception.
+  
+    </li><li> Append Record{[[value]]: <var>value</var>, [[size]]: <var>size</var>} as the last element of <var>queue</var>.
+</li></ol>
+
+
+   <h4 class="heading settled" data-level="6.3.3" id="get-total-queue-size"><span class="secno">6.3.3. </span><span class="content">GetTotalQueueSize ( queue )</span><a class="self-link" href="#get-total-queue-size"></a></h4>
+
+
+   <ol>
+  
+    <li> Let <var>totalSize</var> be <b>0</b>.
+  
+    </li><li> Repeat for each Record{[[value]], [[size]]} <var>pair</var> that is an element of <var>queue</var>,
+    
+     <ol>
+      
+      <li> Assert: <var>pair</var>.[[size]] is a finite, non-<b>NaN</b> number.
+      
+      </li><li> Add <var>pair</var>.[[size]] to <var>totalSize</var>.
+    
+     </li></ol>
+     
+  
+    </li><li> Return <var>totalSize</var>.
+</li></ol>
+
+
+   <h4 class="heading settled" data-level="6.3.4" id="peek-queue-value"><span class="secno">6.3.4. </span><span class="content">PeekQueueValue ( queue )</span><a class="self-link" href="#peek-queue-value"></a></h4>
+
+
+   <ol>
+  
+    <li> Assert: <var>queue</var> is not empty.
+  
+    </li><li> Let <var>pair</var> be the first element of <var>queue</var>.
+  
+    </li><li> Return <var>pair</var>.[[value]].
+</li></ol>
+
+
+   <h3 class="heading settled" data-level="6.4" id="misc-abstract-ops"><span class="secno">6.4. </span><span class="content">Miscellaneous Operations</span><a class="self-link" href="#misc-abstract-ops"></a></h3>
+
+
+   <p>A few abstract operations are used in this specification for utility purposes. We define them here.</p>
+
+
+   <h4 class="heading settled" data-level="6.4.1" id="invoke-or-noop"><span class="secno">6.4.1. </span><span class="content">InvokeOrNoop ( O, P, args )</span><a class="self-link" href="#invoke-or-noop"></a></h4>
+
+
+   <div class="note" role="note">
+  InvokeOrNoop is a slight modification of the <a data-link-type="biblio" href="#biblio-ecmascript">[ECMASCRIPT]</a>
+  <a href="https://people.mozilla.org/~jorendorff/es6-draft.html#sec-invoke">Invoke</a> abstract operation to return
+  <b>undefined</b> when the method is not present.
+</div>
+
+
+   <ol>
+  
+    <li> Assert: <var>P</var> is a valid property key.
+  
+    </li><li> If <var>args</var> was not passed, let <var>args</var> be a new empty List.
+  
+    </li><li> Let <var>method</var> be GetV(<var>O</var>, <var>P</var>).
+  
+    </li><li> ReturnIfAbrupt(<var>method</var>).
+  
+    </li><li> If <var>method</var> is <b>undefined</b>, return <b>undefined</b>.
+  
+    </li><li> Return Call(<var>method</var>, <var>O</var>, <var>args</var>).
+</li></ol>
+
+
+   <h4 class="heading settled" data-level="6.4.2" id="promise-invoke-or-fallback-or-noop"><span class="secno">6.4.2. </span><span class="content">PromiseInvokeOrFallbackOrNoop ( O, P1, args1, P2, args2 )</span><a class="self-link" href="#promise-invoke-or-fallback-or-noop"></a></h4>
+
+
+   <div class="note" role="note">
+  PromiseInvokeOrFallbackOrNoop is a specialized version of
+  <a href="http://www.w3.org/2001/tag/doc/promises-guide#promise-calling">promise-calling</a> that works on methods,
+  calls a fallback method if the first method is not present, and returns a promise for <b>undefined</b> when neither
+  method is not present.
+</div>
+
+
+   <ol>
+  
+    <li> Assert: <var>P1</var> is a valid property key.
+  
+    </li><li> Assert: <var>P2</var> is a valid property key.
+  
+    </li><li> Let <var>method</var> be GetV(<var>O</var>, <var>P1</var>).
+  
+    </li><li> If <var>method</var> is an abrupt completion, return a new promise rejected with <var>method</var>.[[value]].
+  
+    </li><li> Let <var>method</var> be <var>method</var>.[[value]].
+  
+    </li><li> If <var>method</var> is <b>undefined</b>, return PromiseInvokeOrNoop(<var>O</var>, <var>P2</var>,
+    <var>args2</var>).
+  
+    </li><li> Let <var>returnValue</var> be Call(<var>method</var>, <var>O</var>, <var>args1</var>).
+  
+    </li><li> If <var>returnValue</var> is an abrupt completion, return a new promise rejected with
+    <var>returnValue</var>.[[value]].
+  
+    </li><li> Otherwise, return a new promise resolved with <var>returnValue</var>.[[value]].
+</li></ol>
+
+
+   <h4 class="heading settled" data-level="6.4.3" id="promise-invoke-or-noop"><span class="secno">6.4.3. </span><span class="content">PromiseInvokeOrNoop ( O, P, args )</span><a class="self-link" href="#promise-invoke-or-noop"></a></h4>
+
+
+   <div class="note" role="note">
+  PromiseInvokeOrNoop is a specialized version of
+  <a href="http://www.w3.org/2001/tag/doc/promises-guide#promise-calling">promise-calling</a> that both works on
+  methods and returns a promise for <b>undefined</b> when the method is not present.
+</div>
+
+
+   <ol>
+  
+    <li> Assert: <var>P</var> is a valid property key.
+  
+    </li><li> If <var>args</var> was not passed, let <var>args</var> be a new empty List.
+  
+    </li><li> Let <var>method</var> be GetV(<var>O</var>, <var>P</var>).
+  
+    </li><li> If <var>method</var> is an abrupt completion, return a new promise rejected with <var>method</var>.[[value]].
+  
+    </li><li> Let <var>method</var> be <var>method</var>.[[value]].
+  
+    </li><li> If <var>method</var> is <b>undefined</b>, return a new promise resolved with <b>undefined</b>.
+  
+    </li><li> Let <var>returnValue</var> be Call(<var>method</var>, <var>O</var>, <var>args</var>).
+  
+    </li><li> If <var>returnValue</var> is an abrupt completion, return a new promise rejected with
+    <var>returnValue</var>.[[value]].
+  
+    </li><li> Otherwise, return a new promise resolved with <var>returnValue</var>.[[value]].
+</li></ol>
+
+
+   <h2 class="heading settled" data-level="7" id="globals"><span class="secno">7. </span><span class="content">Global Properties</span><a class="self-link" href="#globals"></a></h2>
+
+
+   <p>Ideally, this standard would add no new properties to the global object, instead relying on a standard ECMAScript
+module. However, given that the specification for and implementation of modules in a browser environment is still in
+flux, in the meantime the following properties must be exposed on the global object:</p>
+
+
+   <ul>
+  
+    <li> <code>ReadableStream</code>
+  
+    </li><li> <code>WritableStream</code>
+  
+    </li><li> <code>ByteLengthQueuingStrategy</code>
+  
+    </li><li> <code>CountQueuingStrategy</code>
+</li></ul>
+
+
+   <p>In all cases the property must be a data property, with its value being the corresponding constructor defined in this
+standard, and other attributes { [[Writable]]: <b>true</b>, [[Enumerable]]: <b>false</b>, [[Configurable]]:
+<b>true</b> }.</p>
+
+
+   <div class="note" role="note">
+  The <code>ReadableStreamReader</code> class is specifically <em>not</em> exposed, as while it does have a
+  functioning constructor, instances should instead be created through the <code>getReader</code> method of a
+  <code>ReadableStream</code> instance.
+</div>
+
+
+   <div class="note" role="note">
+  If by the time implementers begin implementing this standard, modules start becoming feasible in the relevant
+  environments, then we should reconsider this requirement.
+</div>
+
+
+   <h2 class="heading settled" data-level="8" id="other-streams"><span class="secno">8. </span><span class="content">Other Stream Implementations</span><a class="self-link" href="#other-streams"></a></h2>
+
+
+   <p><em>This section is non-normative.</em></p>
+
+
+   <p>The <code>ReadableStream</code> and <code>WritableStream</code> classes defined in this specification are not expected
+to be the only manifestations of the corresponding <a data-link-type="dfn" href="#readable-stream">readable stream</a> and <a data-link-type="dfn" href="#writable-stream">writable stream</a> concepts. They are
+explicitly meant to cooperate with other stream instances that behave similarly. Those instances could be e.g.
+platform- or developer-created subclasses of these classes, or they could be anything else that obeys the same public
+API contract.</p>
+
+
+   <p>For example, we are already prototyping and planning an additional <code>ReadableByteStream</code> class, which will be
+a <a data-link-type="dfn" href="#readable-stream">readable stream</a> while not being a subclass of <code>ReadableStream</code>. It will have the same set of
+methods as a baseline <code>ReadableStream</code>, and can be used in the same way by most <a data-link-type="dfn" href="#consumer">consumers</a>, who will
+be agnostic to which type of readable stream they are using. However, specialized consumers who know they are dealing
+with a <code>ReadableByteStream</code> will be able to take advantage of extra APIs it provides for extremely efficient
+"bring-your-own-buffer" memory management.</p>
+
+
+   <p>This kind of ecosystem is largely enabled by the genericness of the <code>pipeTo</code> method. Any object which has
+the appropriate public writable stream APIs will work with <code>ReadableStream.prototype.pipeTo</code>. We strongly
+recommend that any readable stream classs you create maintain this property for <em>its</em> <code>pipeTo</code>
+method as well. Even if they use specialized algorithms when given a specific type of writable stream, they should
+always fall back to an algorithm that works with any object obeying the writable stream contract.</p>
+
+
+   <div class="note" role="note">
+  The keen reader may be asking for more precise definitions of the "contracts" in play here, for both readable and
+  writable streams. We’re working on a test suite that should do the trick! For now, please check out our
+  <a href="https://github.com/whatwg/streams/tree/master/reference-implementation/test/templated">templated tests</a>
+  to see initial progress in that direction.
+</div>
+
+
+   <h2 class="heading settled" data-level="9" id="creating-examples"><span class="secno">9. </span><span class="content">Examples of Creating Streams</span><a class="self-link" href="#creating-examples"></a></h2>
+
+
+   <p><em>This section, and all its subsections, are non-normative.</em></p>
+
+
+   <p>The previous examples throughout the standard have focused on how to use streams. Here we show how to create a stream,
+using the <code>ReadableStream</code> or <code>WritableStream</code> constructors.</p>
+
+
+   <h3 class="heading settled" data-level="9.1" id="example-rs-push-no-backpressure"><span class="secno">9.1. </span><span class="content">A readable stream with an underlying push source (no backpressure support)</span><a class="self-link" href="#example-rs-push-no-backpressure"></a></h3>
+
+
+   <p>The following function creates <a data-link-type="dfn" href="#readable-stream">readable streams</a> that wrap web sockets <a data-link-type="biblio" href="#biblio-html">[HTML]</a>, which are <a data-link-type="dfn" href="#push-source">push sources</a>
+that do not support backpressure signals. It illustrates how, when adapting a push source, usually most of the work
+happens in the <code>start</code> function.</p>
+
+
+   <pre><code class="lang-javascript">function makeReadableWebSocketStream(url, protocols) {
+  const ws = new WebSocket(url, protocols);
+  ws.binaryType = "arraybuffer";
+
+  return new ReadableStream({
+    start(enqueue, close, error) {
+      ws.onmessage = event =&gt; enqueue(event.data);
+      ws.onend = close;
+      ws.onerror = error;
+    },
+
+    cancel() {
+      ws.close();
+    }
+  });
+}
+</code></pre>
+
+
+   <p>We can then use this function to create readable streams for a web socket, and pipe that stream to an arbitrary
+writable stream:</p>
+
+
+   <pre><code class="lang-javascript">const webSocketStream = makeReadableWebSocketStream("wss://example.com", 443);
+
+webSocketStream.pipeTo(writableStream)
+  .then(() =&gt; console.log("All data successfully written!"))
+  .catch(e =&gt; console.error("Something went wrong!", e));
+</code></pre>
+
+
+   <h3 class="heading settled" data-level="9.2" id="example-rs-push-backpressure"><span class="secno">9.2. </span><span class="content">A readable stream with an underlying push source and backpressure support</span><a class="self-link" href="#example-rs-push-backpressure"></a></h3>
+
+
+   <p>The following function returns <a data-link-type="dfn" href="#readable-stream">readable streams</a> that wrap "backpressure sockets," which are hypothetical objects
+that have the same API as web sockets, but also provide the ability to pause and resume the flow of data with their
+<code>readStop</code> and <code>readStart</code> methods. In doing so, this example shows how to apply
+<a data-link-type="dfn" href="#backpressure">backpressure</a> to <a data-link-type="dfn" href="#underlying-source">underlying sources</a> that support it.</p>
+
+
+   <pre><code class="lang-javascript">function makeReadableBackpressureSocketStream(host, port) {
+  const socket = createBackpressureSocket(host, port);
+
+  return new ReadableStream({
+    start(enqueue, close, error) {
+      socket.ondata = event =&gt; {
+        if (!enqueue(event.data)) {
+          // If enqueue returns false, the internal queue is full, so propagate
+          // the backpressure signal to the underlying source.
+          socket.readStop();
+        }
+      };
+
+      socket.onend = close;
+      socket.onerror = error;
+    },
+
+    pull() {
+      // This is called if the internal queue has been emptied, but the
+      // stream’s consumer still wants more data. In that case, restart
+      // the flow of data if we have previously paused it.
+      socket.readStart();
+    },
+
+    cancel() {
+      socket.close();
+    }
+  });
+}
+</code></pre>
+
+
+   <p>We can then use this function to create readable streams for such "backpressure sockets" in the same way we do for web
+sockets. This time, however, when we pipe to a destination that cannot accept data as fast as the socket is producing
+it, or if we leave the stream alone without reading from it for some time, a backpressure signal will be sent to the
+socket.</p>
+
+
+   <h3 class="heading settled" data-level="9.3" id="example-rs-pull"><span class="secno">9.3. </span><span class="content">A readable stream with an underlying pull source</span><a class="self-link" href="#example-rs-pull"></a></h3>
+
+
+   <p>The following function returns <a data-link-type="dfn" href="#readable-stream">readable streams</a> that wrap portions of the
+<a href="https://iojs.org/api/fs.html">io.js file system API</a> (which themselves map fairly directly to C’s
+<code>fopen</code>, <code>fread</code>, and <code>fclose</code> trio). Files are a typical example of <a data-link-type="dfn" href="#pull-source">pull
+sources</a>. Note how in contrast to the examples with push sources, most of the work here happens on-demand in the
+<code>pull</code> function, and not at startup time in the <code>start</code> function.</p>
+
+
+   <pre><code class="lang-javascript">const fs = require("pr/fs"); // https://github.com/jden/pr
+const CHUNK_SIZE = 1024;
+
+function makeReadableFileStream(filename) {
+  let fd;
+  let position = 0;
+
+  return new ReadableStream({
+    start() {
+      return fs.open(filename, "r").then(result =&gt; {
+        fd = result;
+      });
+    },
+
+    pull(enqueue, close) {
+      const buffer = new ArrayBuffer(CHUNK_SIZE);
+
+      return fs.read(fd, buffer, 0, CHUNK_SIZE, position).then(bytesRead =&gt; {
+        if (bytesRead === 0) {
+          return fs.close(fd).then(close);
+        } else {
+          position += bytesRead;
+          enqueue(buffer);
+        }
+      });
+    },
+
+    cancel() {
+      return fs.close(fd);
+    }
+  });
+}
+</code></pre>
+
+
+   <p>We can then create and use readable streams for files just as we could before for sockets.</p>
+
+
+   <h3 class="heading settled" data-level="9.4" id="example-ws-no-backpressure"><span class="secno">9.4. </span><span class="content">A writable stream with no backpressure or success signals</span><a class="self-link" href="#example-ws-no-backpressure"></a></h3>
+
+
+   <p>The following function returns a <a data-link-type="dfn" href="#writable-stream">writable stream</a> that wraps a web socket <a data-link-type="biblio" href="#biblio-html">[HTML]</a>. Web sockets do not provide
+any way to tell when a given chunk of data has been successfully sent, so this writable stream has no ability to
+communicate <a data-link-type="dfn" href="#backpressure">backpressure</a> signals or write success/failure to its <a data-link-type="dfn" href="#producer">producers</a>. That is, it will always be in
+the <code>"writable"</code> state, and the promise returned by its <code>write()</code> method will always fulfill
+immediately.</p>
+
+
+   <pre><code class="lang-javascript">function makeWritableWebSocketStream(url, protocols) {
+  const ws = new WebSocket(url, protocols);
+
+  return new WritableStream({
+    start(error) {
+      ws.onerror = error;
+      return new Promise(resolve =&gt; ws.onopen = resolve);
+    },
+
+    write(chunk) {
+      ws.send(chunk);
+      // Return immediately, since the web socket gives us no way to tell
+      // when the write completes.
+    },
+
+    close() {
+      return new Promise((resolve, reject) =&gt; {
+        ws.onclose = resolve;
+        ws.close();
+      });
+    }
+  });
+}
+</code></pre>
+
+
+   <p>We can then use this function to create writable streams for a web socket, and pipe an arbitrary readable stream to it:</p>
+
+
+   <pre><code class="lang-javascript">const webSocketStream = makeWritableWebSocketStream("wss://example.com", 443);
+
+readableStream.pipeTo(webSocketStream)
+  .then(() =&gt; console.log("All data successfully written!"))
+  .catch(e =&gt; console.error("Something went wrong!", e));
+</code></pre>
+
+
+   <h3 class="heading settled" data-level="9.5" id="example-ws-backpressure"><span class="secno">9.5. </span><span class="content">A writable stream with backpressure and success signals</span><a class="self-link" href="#example-ws-backpressure"></a></h3>
+
+
+   <p>The following function returns <a data-link-type="dfn" href="#writable-stream">writable streams</a> that wrap portions of the
+<a href="https://iojs.org/api/fs.html">io.js file system API</a> (which themselves map fairly directly to C’s
+  <code>fopen</code>, <code>fwrite</code>, and <code>fclose</code> trio). Since the API we are wrapping provides
+a way to tell when a given write succeeds, this stream will be able to communicate <a data-link-type="dfn" href="#backpressure">backpressure</a> signals as well
+as whether an individual write succeeded or failed.</p>
+
+
+   <pre><code class="lang-javascript">const fs = require("pr/fs"); // https://github.com/jden/pr
+
+function makeWritableFileStream(filename) {
+  let fd;
+
+  return new WritableStream({
+    start() {
+      return fs.open(filename, "w").then(result =&gt; {
+        fd = result;
+      });
+    },
+
+    write(chunk) {
+      return fs.write(fd, chunk, 0, chunk.length);
+    }
+
+    close() {
+      return fs.close(fd);
+    }
+  });
+}
+</code></pre>
+
+
+   <p>We can then use this function to create a writable stream for a file, and write individual <a data-link-type="dfn" href="#chunk">chunks</a> of data to it:</p>
+
+
+   <pre><code class="lang-javascript">const fileStream = makeWritableFileStream("/example/path/on/fs.txt");
+
+fileStream.write("To stream, or not to stream\n");
+fileStream.write("That is the question\n");
+
+fileStream.close()
+  .then(() =&gt; console.log("chunks written and stream closed successfully!"))
+  .catch(e =&gt; console.error(e));
+</code></pre>
+
+
+   <p>Note that if a particular call to <code>fs.write</code> takes a longer time, the returned promise will fulfill later.
+In the meantime, additional writes can be queued up, which are stored in the stream’s internal queue. The accumulation
+of chunks in this queue can move the stream into a <code>"waiting"</code> state, which is a signal to <a data-link-type="dfn" href="#producer">producers</a>
+that they should back off and stop writing if possible.</p>
+
+
+   <p>The way in which the writable stream queues up writes is especially important in this case, since as stated in
+<a href="https://iojs.org/api/fs.html#fs_fs_write_fd_data_position_encoding_callback">the documentation for
+<code>fs.write</code></a>, "it is unsafe to use <code>fs.write</code> multiple times on the same file without waiting
+for the [promise]." But we don’t have to worry about that when writing the <code>makeWritableFileStream</code>
+function, since the stream implementation guarantees that the <a data-link-type="dfn" href="#underlying-sink">underlying sink</a>’s <code>write</code> method will
+not be called until any promises returned by previous calls have fulfilled!</p>
+
+
+   <h3 class="heading settled" data-level="9.6" id="example-both"><span class="secno">9.6. </span><span class="content">A { readable, writable } stream pair wrapping the same underlying resource</span><a class="self-link" href="#example-both"></a></h3>
+
+
+   <p>The following function returns an object of the form <code>{ readable, writable }</code>, with the
+<code>readable</code> property containing a readable stream and the <code>writable</code> property containing a
+writable stream, where both streams wrap the same underlying web socket resource. In essence, this combines
+<a href="#example-rs-push-no-backpressure">§9.1 A readable stream with an underlying push source (no backpressure support)</a> and <a href="#example-ws-no-backpressure">§9.4 A writable stream with no backpressure or success signals</a>.</p>
+
+
+   <p>While doing so, it illustrates how you can use JavaScript classes to create reusable underlying sink and underlying
+source abstractions.</p>
+
+
+   <pre><code class="lang-javascript">function streamifyWebSocket(url, protocol) {
+  const ws = new WebSocket(url, protocols);
+  ws.binaryType = "arraybuffer";
+
+  return {
+    readable: new ReadableStream(new WebSocketSource(ws)),
+    writable: new WritableStream(new WebSocketSink(ws))
+  };
+}
+
+class WebSocketSource {
+  constructor(ws) {
+    this._ws = ws;
+  }
+
+  start(enqueue, close, error) {
+    this._ws.onmessage = event =&gt; enqueue(event.data);
+    this._ws.onend = close;
+    this._ws.onerror = error;
+  }
+
+  cancel() {
+    this._ws.close();
+  }
+}
+
+class WebSocketSink {
+  constructor(ws) {
+    this._ws = ws;
+  }
+
+  start(error) {
+    this._ws.onerror = error;
+    return new Promise(resolve =&gt; this._ws.onopen = resolve);
+  }
+
+  write(chunk) {
+    this._ws.send(chunk);
+  }
+
+  close() {
+    return new Promise((resolve, reject) =&gt; {
+      this._ws.onclose = resolve;
+      this._ws.close();
+    });
+  }
+});
+</code></pre>
+
+
+   <p>We can then use the objects created by this function to communicate with a remote web socket, using the standard stream
+APIs:</p>
+
+
+   <pre><code class="lang-javascript">const streamyWS = streamifyWebSocket("wss://example.com", 443);
+
+streamyWS.writable.write("Hello");
+streamyWS.writable.write("web socket!");
+
+streamyWS.readable.read().then(chunk =&gt; {
+  console.log("The web socket says: ", chunk);
+});
+</code></pre>
+
+
+   <p>Note how in this setup canceling the <code>readable</code> side will implicitly close the <code>writable</code> side,
+and similarly, closing or aborting the <code>writable</code> side will implicitly close the <code>readable</code> side.</p>
+
+
+   <pre><code class="lang-javascript">streamyWS.writable.close().then(() =&gt; {
+  assert(streamyWS.readable.state === "closed");
+});
+</code></pre>
+
+
+
+   <h2 class="heading settled" data-level="10" id="state-machines"><span class="secno">10. </span><span class="content">State Machine Diagrams</span><a class="self-link" href="#state-machines"></a></h2>
+
+
+   <p><em>This section, and all its subsections, are non-normative.</em></p>
+
+
+   <p>As explained in excruciating detail above, both readable and writable streams have fairly complex internal state
+machines. In reaction to stimuli from various parts of the system, they transfer between several states. The public
+<code>state</code> properties of each stream give a high-level overview of how developers should interact with the
+rest of the stream’s public API. However there are also a number of private flags used for tracking more subtle state
+within the stream.</p>
+
+
+   <p>The diagrams in these sections aim to summarize, at least partially, the way in which readable and writable streams
+transition between their states.</p>
+
+
+   <h3 class="heading settled" data-level="10.1" id="rs-state-diagram"><span class="secno">10.1. </span><span class="content">The Readable Stream State Diagram</span><a class="self-link" href="#rs-state-diagram"></a></h3>
+
+
+   <p>Readable streams transition in response to both actions from the <a data-link-type="dfn" href="#consumer">consumer</a> on the stream’s public API, and
+events instigated by the <a data-link-type="dfn" href="#underlying-source">underlying source</a> when the stream implementation calls the source’s methods.</p>
+
+
+   <figure>
+  <img alt="The readable stream state machine diagram." src="readable-stream.svg" width="670">
+
+  
+    <figcaption>
+    
+     <dl>
+      
+      <dt><span style="font-style: normal; font-weight: normal; font-family: monospace;">monospace</span>
+      
+      
+      </dt><dd>Methods of the stream, called by consumers
+      
+
+      
+      </dd><dt><span style="font-style: normal; font-weight: bold;">bold</span>
+      
+      
+      </dt><dd>Underlying source methods, called by the stream
+      
+
+      
+      </dd><dt><span style="font-style: italic; font-weight: normal;">italic</span>
+      
+      
+      </dt><dd>Capabilities given to the underlying source, called by the underlying source methods
+      
+    
+     </dd></dl>
+     
+  
+    </figcaption>
+</figure>
+
+
+   <h3 class="heading settled" data-level="10.2" id="ws-state-diagram"><span class="secno">10.2. </span><span class="content">The Writable Stream State Diagram</span><a class="self-link" href="#ws-state-diagram"></a></h3>
+
+
+   <p>TODO</p>
+
+
+
+   <h2 class="no-num heading settled" id="conventions"><span class="content">Conventions</span><a class="self-link" href="#conventions"></a></h2>
+
+
+   <p>This specification uses algorithm conventions very similar to those of <a data-link-type="biblio" href="#biblio-ecmascript">[ECMASCRIPT]</a>. However, it deviates in the
+following ways, mostly for brevity. It is hoped (and vaguely planned) that eventually the conventions of ECMAScript
+itself will evolve in these ways.</p>
+
+
+   <ul>
+  
+    <li> We use destructuring notation in function and method declarations, and assume that the destructuring assignment
+    procedure was performed before the algorithm starts.
+  
+    </li><li> We similarly use the default argument notation <code>= {}</code> in a couple of cases.
+  
+    </li><li> We use the notation <var>x</var>@[[y]] to refer to internal slots of an object, instead of saying "the [[y]]
+    internal slot of <var>x</var>."
+  
+    </li><li> We do not alias <b>this</b> to a local variable in each algorithm, instead using it directly.
+  
+    </li><li> We use the phrase "call-with-rethrow AbstractOperation(<var>x</var>, <var>y</var>, <var>z</var>)" as a shorthand
+    for "Let <var>opResult</var> be AbstractOperation(<var>x</var>, <var>y</var>, <var>z</var>).
+    ReturnIfAbrupt(<var>opResult</var>)."
+  
+    </li><li> We use <a href="https://w3ctag.github.io/promises-guide/#shorthand-phrases">the shorthand phrases from the W3C
+    TAG promises guide</a> to operate on promises at a higher level than the ECMAScript spec does.
+  
+    </li><li> We introduce the notion of creating a function that "closes over" a given variable. This is meant to work the
+    same as how the ECMAScript spec gives such functions internal slots which get filled in upon creation and then
+    have their values pulled out of during execution, but require less formal contortions.
+</li></ul>
+
+
+   <h2 class="no-num heading settled" id="acks"><span class="content">Acknowledgments</span><a class="self-link" href="#acks"></a></h2>
+
+
+   <p>The editor would like to thank
+Tab Atkins,
+Marcos Caceres,
+Tim Caswell,
+Brian di Palma,
+Forbes Lindesay,
+Thorsten Lorenz,
+Calvin Metcalf,
+Michael Mior,
+Jens Nockert,
+Trevor Norris,
+Xabier Rodríguez,
+HE Shi-Jun,
+Dominic Tarr, and
+tzik
+for their contributions to this specification.</p>
+
+
+   <p>Special thanks to:
+Bert Belder for bringing up <a href="https://github.com/whatwg/streams/issues/253">implementation concerns</a> that led
+  to crucial API changes,
+Will Chan for his help ensuring that the API allows high-performance network streaming,
+Janessa Det for the logo,
+Yutaka Hirano for his help with the readable stream reader design,
+Gorgi Kosev for his breakthrough idea of separating piping into two methods, thus resolving
+  <a href="https://github.com/whatwg/streams/issues/44">a major sticking point</a>;
+Forrest Norvell for his enthusiastic iteration on the reference implementation;
+Isaac Schlueter for his pioneering work on JavaScript streams in Node.js; and
+Jake Verbaten for his continued involvement, support, and interest in pushing this spec forward.</p>
+
+
+   <p>This standard is written by <a href="https://domenic.me/">Domenic Denicola</a>
+(<a href="https://google.com">Google</a>, <a href="mailto:d@domenic.me">d@domenic.me</a>) with substantial help from
+Takeshi Yoshino (<a href="https://google.com">Google</a>,
+<a href="mailto:tyoshino@chromium.org">tyoshino@chromium.org</a>).</p>
+
+
+   <p>Per <a href="https://creativecommons.org/publicdomain/zero/1.0/">CC0</a>, to the extent possible under law, the editor has waived all copyright and related or neighboring rights to this work.</p>
+
+</main>
+  
+
+  <h2 class="no-num no-ref heading settled" id="conformance"><span class="content">Conformance</span><a class="self-link" href="#conformance"></a></h2>
+  
+
+
+  <p>All diagrams, examples, and notes in this specification are non-normative, as are all sections explicitly marked
+non-normative. Everything else in this specification is normative.
+
+</p>
+  <p>The key words "MUST", "MUST NOT", "REQUIRED",  "SHOULD", "SHOULD NOT", "RECOMMENDED",
+"MAY", and "OPTIONAL" in the normative parts of this specification are to be interpreted as described in RFC2119. For
+readability, these words do not appear in all uppercase letters in this specification. <a data-link-type="biblio" href="#biblio-rfc2119">[RFC2119]</a>
+
+</p>
+  <p>Conformance requirements phrased as algorithms or specific steps may be implemented in any manner, so long as the end
+result is equivalent. (In particular, the algorithms defined in this specification are intended to be easy to follow, 
+and not intended to be performant.) 
+</p>
+  <h2 class="no-num heading settled" id="index"><span class="content">Index</span><a class="self-link" href="#index"></a></h2>
+  <h3 class="no-num heading settled" id="index-defined-here"><span class="content">Terms defined by this specification</span><a class="self-link" href="#index-defined-here"></a></h3>
+  <ul class="indexlist">
+   <li>abort a writable stream, <a href="#abort-a-writable-stream">2.2</a>
+   </li><li>active reader, <a href="#active-reader">2.6</a>
+   </li><li>backpressure, <a href="#backpressure">2.4</a>
+   </li><li>cancel a readable stream, <a href="#cancel-a-readable-stream">2.1</a>
+   </li><li>chunk, <a href="#chunk">2</a>
+   </li><li>consumer, <a href="#consumer">2.1</a>
+   </li><li>internal queues, <a href="#internal-queues">2.5</a>
+   </li><li>locked to a reader, <a href="#locked-to-a-reader">2.6</a>
+   </li><li>original source, <a href="#original-source">2.4</a>
+   </li><li>pipe chain, <a href="#pipe-chain">2.4</a>
+   </li><li>piping, <a href="#piping">2.4</a>
+   </li><li>producer, <a href="#producer">2.2</a>
+   </li><li>pull source, <a href="#pull-source">2.1</a>
+   </li><li>push source, <a href="#push-source">2.1</a>
+   </li><li>queuing strategy, <a href="#queuing-strategy">2.5</a>
+   </li><li>readable stream, <a href="#readable-stream">2.1</a>
+   </li><li>Readable Stream Close Function, <a href="#readable-stream-close-function">3.4.6</a>
+   </li><li>Readable Stream Enqueue Function, <a href="#readable-stream-enqueue-function">3.4.7</a>
+   </li><li>Readable Stream Error Function, <a href="#readable-stream-error-function">3.4.8</a>
+   </li><li>readable stream reader, <a href="#readable-stream-reader">2.6</a>
+   </li><li>release a read lock, <a href="#release-a-read-lock">2.6</a>
+   </li><li>transform stream, <a href="#transform-stream">2.3</a>
+   </li><li>ultimate sink, <a href="#ultimate-sink">2.4</a>
+   </li><li>underlying sink, <a href="#underlying-sink">2.2</a>
+   </li><li>underlying source, <a href="#underlying-source">2.1</a>
+   </li><li>writable stream, <a href="#writable-stream">2.2</a>
+   </li><li>Writable Stream Error Function, <a href="#writable-stream-error-function">4.3.3</a></li></ul>
+  <h2 class="no-num heading settled" id="references"><span class="content">References</span><a class="self-link" href="#references"></a></h2>
+  <h3 class="no-num heading settled" id="normative"><span class="content">Normative References</span><a class="self-link" href="#normative"></a></h3>
+  <dl>
+   <dt id="biblio-ecmascript"><a class="self-link" href="#biblio-ecmascript"></a>[ECMASCRIPT]
+   </dt><dd>Allen Wirfs-Brock. <a href="http://people.mozilla.org/~jorendorff/es6-draft.html">ECMA-262 ECMAScript Language Specification, Edition 6</a>. Draft. URL: <a href="http://people.mozilla.org/~jorendorff/es6-draft.html">http://people.mozilla.org/~jorendorff/es6-draft.html</a>
+   </dd><dt id="biblio-rfc2119"><a class="self-link" href="#biblio-rfc2119"></a>[RFC2119]
+   </dt><dd>S. Bradner. <a href="https://tools.ietf.org/html/rfc2119">Key words for use in RFCs to Indicate Requirement Levels</a>. March 1997. Best Current Practice. URL: <a href="https://tools.ietf.org/html/rfc2119">https://tools.ietf.org/html/rfc2119</a></dd></dl>
+  <h3 class="no-num heading settled" id="informative"><span class="content">Informative References</span><a class="self-link" href="#informative"></a></h3>
+  <dl>
+   <dt id="biblio-fetch"><a class="self-link" href="#biblio-fetch"></a>[FETCH]
+   </dt><dd>Anne van Kesteren. <a href="https://fetch.spec.whatwg.org/">Fetch Standard</a>. Living Standard. URL: <a href="https://fetch.spec.whatwg.org/">https://fetch.spec.whatwg.org/</a>
+   </dd><dt id="biblio-html"><a class="self-link" href="#biblio-html"></a>[HTML]
+   </dt><dd>Ian Hickson. <a href="https://html.spec.whatwg.org/">HTML</a>. Living Standard. URL: <a href="https://html.spec.whatwg.org/">https://html.spec.whatwg.org/</a>
+   </dd><dt id="biblio-service-workers"><a class="self-link" href="#biblio-service-workers"></a>[SERVICE-WORKERS]
+   </dt><dd>Alex Russell; Jungkee Song; Jake Archibald. <a href="http://www.w3.org/TR/service-workers/">Service Workers</a>. 5 February 2015. WD. URL: <a href="http://www.w3.org/TR/service-workers/">http://www.w3.org/TR/service-workers/</a></dd></dl>
+ 
+</body></html>
