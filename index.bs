@@ -373,6 +373,12 @@ Instances of <code>ReadableStream</code> are created with the internal slots des
 
 <h5 id="rs-cancel">cancel(reason)</h5>
 
+<div class="note">
+  The <code>cancel</code> method <a lt="cancel a readable stream">cancels</a> the stream, signaling a loss of interest
+  in the stream by a consumer. The supplied <var>reason</var> argument will be given to the underlying source, which
+  may or may not use it.
+</div>
+
 <pre is="emu-alg">
   1. If IsReadableStream(*this*) is *false*, return a promise rejected with a *TypeError* exception.
   1. If IsReadableStreamLocked(*this*) is *true*, return a promise rejected with a *TypeError* exception.
