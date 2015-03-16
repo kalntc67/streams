@@ -16,4 +16,14 @@ export default (label, factory, error) => {
     cancelPromise2.catch(e => t.equal(e, error, 'second cancel() call should reject with the error'));
     t.notEqual(cancelPromise1, cancelPromise2, 'cancel() calls should return distinct promises');
   });
+
+  test('should be able to acquire multiple readers, since they are all auto-released', t => {
+    const rs = factory();
+
+    rs.getReader();
+
+    t.doesNotThrow(() => rs.getReader(), 'getting a second reader should not throw');
+    t.doesNotThrow(() => rs.getReader(), 'getting a third reader should not throw');
+    t.end();
+  });
 };
