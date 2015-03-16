@@ -15,7 +15,6 @@ Logo: https://resources.whatwg.org/logo-streams.svg
 !Participate: <a href="https://github.com/whatwg/streams/issues/new">File an issue</a> (<a href="https://github.com/whatwg/streams/issues?state=open">open issues</a>)
 !Participate: <a href="https://wiki.whatwg.org/wiki/IRC">IRC: #whatwg on Freenode</a>
 !Version History: <a href="https://github.com/whatwg/streams/commits">https://github.com/whatwg/streams/commits</a>
-!Version History: [SNAPSHOT-LINK]
 !Version History: <a href="https://twitter.com/streamsstandard">@streamsstandard</a>
 </pre>
 
@@ -383,6 +382,12 @@ Instances of <code>ReadableStream</code> are created with the internal slots des
   in the stream by a consumer. The supplied <var>reason</var> argument will be given to the underlying source, which
   may or may not use it.
 </div>
+
+<emu-alg>
+  1. If IsReadableStream(*this*) is *false*, return a promise rejected with a *TypeError* exception.
+  1. If IsReadableStreamLocked(*this*) is *true*, return a promise rejected with a *TypeError* exception.
+  1. Return CancelReadableStream(*this*, _reason_).
+</emu-alg>
 
 <ol>
   <li> If IsReadableStream(<b>this</b>) is <b>false</b>, return a promise rejected with a <b>TypeError</b> exception.
